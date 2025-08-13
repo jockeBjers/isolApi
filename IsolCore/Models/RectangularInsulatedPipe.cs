@@ -1,51 +1,61 @@
+
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-public class CircularInsulatedPipe : InsulatedPipeBase
+public class RectangularInsulatedPipe : InsulatedPipeBase
 {
     [Key]
     public int Id { get; set; }
-    public required CircularPipeSize Size { get; set; }
     public double Length { get; set; }
-    public required InsulationType FirstLayerMaterial { get; set; }
-    public InsulationType? SecondLayerMaterial { get; set; }
+    public double SideA { get; set; }
+    public double SideB { get; set; }
     [Required]
     public int ProjectId { get; set; }
+    public required InsulationType FirstLayerMaterial { get; set; }
+    public InsulationType? SecondLayerMaterial { get; set; }
     
     [ForeignKey("ProjectId")]
     public virtual Project? Project { get; set; }
 
-    public CircularInsulatedPipe() { }
+    private readonly InsulationCalculator _calculator = new InsulationCalculator();
+    
+    public RectangularInsulatedPipe() { }
 
-    public CircularInsulatedPipe(int id, CircularPipeSize size, double length, InsulationType firstLayerMaterial, InsulationType? secondLayerMaterial, int projectId)
+    public RectangularInsulatedPipe(
+        double length,
+        double sideA,
+        double sideB,
+        int projectId,
+        InsulationType firstLayerMaterial,
+        InsulationType? secondLayerMaterial = null,
+        int id = 0
+    )
     {
         Id = id;
-        Size = size;
         Length = length;
+        SideA = sideA;
+        SideB = sideB;
+        ProjectId = projectId;
         FirstLayerMaterial = firstLayerMaterial;
         SecondLayerMaterial = secondLayerMaterial;
-        ProjectId = projectId;
     }
-
-    private readonly InsulationCalculator _calculator = new InsulationCalculator();
 
     public double GetFirstLayerArea()
     {
-        return _calculator.CalculateFirstLayerArea(
-            (int)(Size.Diameter * 1000), 
-            (int)FirstLayerMaterial.InsulationThickness,
-            (int)Length
-        );
+        return InsulationCalculator.CalculateRectangularFirstLayerArea(
+            SideA, SideB, FirstLayerMaterial.InsulationThickness, Length);
     }
 
     public double GetSecondLayerArea()
     {
         if (SecondLayerMaterial == null) return 0;
-        return _calculator.CalculateSecondLayerArea(
-            (int)(Size.Diameter * 1000), 
-            (int)SecondLayerMaterial.InsulationThickness,
-            (int)Length
+        return InsulationCalculator.CalculateRectangularSecondLayerArea(
+            SideA,
+            SideB,
+            FirstLayerMaterial.InsulationThickness,
+            SecondLayerMaterial.InsulationThickness,
+            Length
         );
     }
 
