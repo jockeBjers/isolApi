@@ -1,6 +1,5 @@
 
 
-
 namespace IsolkalkylAPI
 {
     public class Program
@@ -22,6 +21,9 @@ namespace IsolkalkylAPI
             
             // Register user service
             builder.Services.AddScoped<IUserService, UserService>();
+            // Register organization service
+            builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
 
             var app = builder.Build();
 
@@ -36,7 +38,7 @@ namespace IsolkalkylAPI
             app.MapControllers();
 
             // Ensure SQLite DB is created and seeded on first boot
-            bool resetDatabaseToDefault = true;
+            bool resetDatabaseToDefault = false;
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();

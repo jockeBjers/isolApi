@@ -4,3 +4,6 @@ global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Logging;
 global using IsolCore.Services;
 global using IsolCore.Services.UserServices;
+global using IsolCore.Models;
+global using IsolCore.Services.OrganizationServices;
+global using IsolCore.Services.AuthServices;
