@@ -15,6 +15,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<List<User>> GetAllUsers()
     {
         var users = await _db.Users
+            .Include(u => u.Organization) 
             .ToListAsync();
 
         return users;
@@ -28,6 +29,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<User?> GetUserByName(string username)
     {
         var user = await _db.Users
+            .Include(u => u.Organization)  
             .FirstOrDefaultAsync(u => u.Name == username);
 
         if (user == null)
@@ -39,6 +41,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<User?> GetUserById(int userId)
     {
         var user = await _db.Users
+            .Include(u => u.Organization) 
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
