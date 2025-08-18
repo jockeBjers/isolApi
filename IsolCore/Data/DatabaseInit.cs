@@ -39,10 +39,10 @@ private async Task SeedDatabase()
         var org = new Organization
         {
             Id = "50522",
-            Name = "Default Organization",
+            Name = "Taekwando",
             Address = "123 Main St",
             Phone = "011 22 44 00",
-            Email = "info@org.com"
+            Email = "info@taektaek.com"
         };
         _db.Organizations.Add(org);
         await _db.SaveChangesAsync();
