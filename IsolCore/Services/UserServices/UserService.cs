@@ -26,11 +26,11 @@ public class UserService(IDatabase DbContext) : IUserService
         return await _db.Users.AnyAsync(u => u.Name == username);
     }
 
-    public async Task<User?> GetUserByName(string username)
+    public async Task<User?> GetUserByEmail(string email)
     {
         var user = await _db.Users
             .Include(u => u.Organization)  
-            .FirstOrDefaultAsync(u => u.Name == username);
+            .FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null)
             return null;

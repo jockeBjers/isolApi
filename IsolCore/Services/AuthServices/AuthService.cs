@@ -6,7 +6,7 @@ public class AuthService(IUserService userService) : IAuthService
 
     public async Task<User?> Login(string email, string password)
     {
-        var user = await _userService.GetUserByName(email);
+        var user = await _userService.GetUserByEmail(email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return null;
 

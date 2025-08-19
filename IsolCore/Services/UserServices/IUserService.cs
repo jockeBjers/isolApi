@@ -3,7 +3,7 @@ namespace IsolCore.Services.UserServices;
 public interface IUserService
 {
     Task<List<User>> GetAllUsers();
-    Task<User?> GetUserByName(string username);
+    Task<User?> GetUserByEmail(string email);
     Task<User?> GetUserById(int userId);
     Task<bool> DoesUserExist(string username);
     Task AddUser(User user);
