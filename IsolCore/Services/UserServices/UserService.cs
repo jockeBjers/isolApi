@@ -15,7 +15,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<List<User>> GetAllUsers()
     {
         var users = await _db.Users
-            .Include(u => u.Organization) 
+            .Include(u => u.Organization)
             .ToListAsync();
 
         return users;
@@ -29,7 +29,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<User?> GetUserByEmail(string email)
     {
         var user = await _db.Users
-            .Include(u => u.Organization)  
+            .Include(u => u.Organization)
             .FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null)
@@ -41,7 +41,7 @@ public class UserService(IDatabase DbContext) : IUserService
     public async Task<User?> GetUserById(int userId)
     {
         var user = await _db.Users
-            .Include(u => u.Organization) 
+            .Include(u => u.Organization)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -84,21 +84,30 @@ public class UserService(IDatabase DbContext) : IUserService
 
         return existingUser;
     }
-
     public async Task<User?> UpdateUser(int userId, User updatedUser)
     {
         var existingUser = await _db.Users.FindAsync(userId);
         if (existingUser == null)
             return null;
 
-        if(!String.IsNullOrEmpty(updatedUser.PasswordHash))
-            existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(updatedUser.PasswordHash);
-
         existingUser.Email = updatedUser.Email;
         existingUser.Phone = updatedUser.Phone;
+        existingUser.FailedLoginAttempts = updatedUser.FailedLoginAttempts;
+        existingUser.LockoutEnd = updatedUser.LockoutEnd;
 
         await _db.SaveChangesAsync();
 
         return existingUser;
+    }
+
+    public async Task<bool> UpdateUserPassword(int userId, string newPassword)
+    {
+        var existingUser = await _db.Users.FindAsync(userId);
+        if (existingUser == null)
+            return false;
+
+        existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await _db.SaveChangesAsync();
+        return true;
     }
 }

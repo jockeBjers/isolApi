@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class User
-{   
+{
     [Key]
     public int Id { get; set; }
     [Required]
@@ -19,7 +19,10 @@ public class User
     public string Role { get; set; } = "User";
     [Required]
     public required string PasswordHash { get; set; }
-    
+
     [ForeignKey("OrganizationId")]
     public virtual Organization? Organization { get; set; }
+
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEnd { get; set; }
 }
