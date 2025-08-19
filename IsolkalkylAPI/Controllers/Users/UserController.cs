@@ -30,10 +30,10 @@ public class UserController : ControllerBase
         return Ok(userDtos);
     }
 
-    [HttpGet("user/{username}")]
-    public async Task<IActionResult> GetUser(string username)
+    [HttpGet("user")]
+    public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
     {
-        var user = await _userService.GetUserByName(username);
+        var user = await _userService.GetUserByEmail(email);
         if (user == null)
             return NotFound();
 
@@ -49,7 +49,7 @@ public class UserController : ControllerBase
         };
         return Ok(userDto);
     }
-    
+
     [HttpPost("create")]
     public async Task<IActionResult> AddUser([FromBody] UserDto userDto)
     {
@@ -67,6 +67,6 @@ public class UserController : ControllerBase
             Role = userDto.Role,
         };
         await _userService.AddUser(user);
-        return CreatedAtAction(nameof(GetUser), new { username = user.Name }, userDto);
+        return CreatedAtAction(nameof(GetUserByEmail), new { email = user.Email }, userDto);
     }
 }
