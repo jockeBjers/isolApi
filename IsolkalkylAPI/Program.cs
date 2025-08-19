@@ -1,4 +1,4 @@
-
+using Serilog;
 
 namespace IsolkalkylAPI
 {
@@ -8,20 +8,23 @@ namespace IsolkalkylAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            
+            Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateLogger();
+
             builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
             builder.Services.AddControllers();
             builder.Services.AddSwaggerGen();
-            
+
             // Register the database and its initializer
             builder.Services.AddSqlite<Database>("Data Source=../IsolCore/Data/IsolkalkylDB.db");
             builder.Services.AddScoped<IDatabase, Database>();
             builder.Services.AddScoped<DatabaseInitializer>();
-            
+
             // Register user service
             builder.Services.AddScoped<IUserService, UserService>();
-            // Register organization service
+            // Register organization service                   
             builder.Services.AddScoped<IOrganizationService, OrganizationService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -37,8 +40,11 @@ namespace IsolkalkylAPI
             app.UseAuthorization();
             app.MapControllers();
 
+            Log.Information("Application starting up");
+
+
             // Ensure SQLite DB is created and seeded on first boot
-            bool resetDatabaseToDefault = false;
+            bool resetDatabaseToDefault = true;
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
@@ -49,6 +55,8 @@ namespace IsolkalkylAPI
             }
 
             app.Run();
+
+            Log.CloseAndFlush();
         }
     }
 }
