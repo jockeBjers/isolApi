@@ -1,4 +1,5 @@
 using Serilog;
+using FluentValidation;
 
 namespace IsolkalkylAPI
 {
@@ -16,12 +17,11 @@ namespace IsolkalkylAPI
 
             builder.Services.AddControllers();
             builder.Services.AddSwaggerGen();
-
             // Register the database and its initializer
             builder.Services.AddSqlite<Database>("Data Source=../IsolCore/Data/IsolkalkylDB.db");
             builder.Services.AddScoped<IDatabase, Database>();
             builder.Services.AddScoped<DatabaseInitializer>();
-
+            builder.Services.AddSingleton<Validator>();
             // Register user service
             builder.Services.AddScoped<IUserService, UserService>();
             // Register organization service                   

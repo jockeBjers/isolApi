@@ -1,15 +1,27 @@
 
 namespace IsolkalkylAPI.Controllers.Auth;
 
+using IsolkalkylAPI.Controllers.Auth;
+using FluentValidation;
+
 [Route("api/auth")]
 [ApiController]
-public class AuthController(IAuthService authService) : Controller
+public class AuthController(IAuthService authService, Validator validator) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly Validator _validator = validator;
 
     [HttpPost("login")]
     public async Task<ActionResult> LogIn([FromBody] LoginRequest request)
     {
+
+        var validationResult = _validator.Validate(new LoginValidator(), request);
+
+        if (validationResult != null)
+        {
+            Log.Warning("Validation failed for login request");
+            return validationResult;
+        }
         try
         {
             // First check if user exists and is locked out
@@ -41,11 +53,19 @@ public class AuthController(IAuthService authService) : Controller
     [HttpPost("register")]
     public async Task<ActionResult> Handle([FromBody] RegisterRequest request)
     {
+        var validationResult = _validator.Validate(new RegisterValidator(), request);
+
+        if (validationResult != null)
+        {
+            Log.Warning("Validation failed for registration request");
+            return validationResult;
+        }
+
         var result = await _authService.Register(request.Name, request.Password, request.Email, request.PhoneNumber, request.OrganizationId);
         if (result == null)
         {
-            Log.Warning("Registration failed: Username {Name} already exists.", request.Name);
-            return BadRequest("Username already exists");
+            Log.Warning("Registration failed: email {email} already exists.", request.Email);
+            return BadRequest("Registration failed. Please check your details and try again.");
         }
 
         var response = new Response(result.Name);

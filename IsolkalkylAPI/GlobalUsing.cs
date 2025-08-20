@@ -8,3 +8,4 @@ global using IsolCore.Models;
 global using IsolCore.Services.OrganizationServices;
 global using IsolCore.Services.AuthServices;
 global using Serilog;
+global using FluentValidation;
