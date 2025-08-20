@@ -17,6 +17,9 @@ public class Database : DbContext, IDatabase
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
             .IsUnique();
+
+        modelBuilder.Entity<User>().OwnsOne(u => u.RefreshToken);
+
     }
     public async Task<int> SaveChangesAsync()
     {

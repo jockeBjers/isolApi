@@ -1,6 +1,8 @@
 
+using System.Security.Claims;
 using System.Security.Cryptography;
 using DotNetEnv;
+using Microsoft.OpenApi.Models;
 
 namespace IsolkalkylAPI
 {
@@ -8,7 +10,6 @@ namespace IsolkalkylAPI
     {
         public static async Task Main(string[] args)
         {
-            // Load .env file in development
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
                 Env.Load();
@@ -22,8 +23,8 @@ namespace IsolkalkylAPI
             {
                 throw new InvalidOperationException("JWT_SECRET_KEY environment variable must be set and at least 32 characters long.");
             }
-            var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "IsolkalkylAPI";
-            var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "IsolkalkylAPI-Users";
+            var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+            var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
 
             // JWT
             builder.Configuration["Jwt:Key"] = jwtKey;
@@ -43,20 +44,45 @@ namespace IsolkalkylAPI
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = jwtIssuer,
-
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
                         ValidateAudience = true,
-                        ValidAudience = jwtAudience,
-
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+                        NameClaimType = ClaimTypes.Name,
+                        RoleClaimType = ClaimTypes.Role
                     };
                 });
+
             builder.Services.AddAuthorization();
             builder.Services.AddControllers();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "IsolkalkylAPI", Version = "v1" });
+
+                    // Simpler JWT configuration
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Description = "Enter JWT token",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT"
+                    });
+
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+                });
             // Register the database and its initializer
             builder.Services.AddSqlite<Database>("Data Source=../IsolCore/Data/IsolkalkylDB.db");
             builder.Services.AddScoped<IDatabase, Database>();
@@ -74,6 +100,7 @@ namespace IsolkalkylAPI
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+
             }
 
             app.UseHttpsRedirection();
