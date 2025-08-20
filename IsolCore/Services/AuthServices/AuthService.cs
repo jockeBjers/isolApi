@@ -1,4 +1,9 @@
 namespace IsolCore.Services.AuthServices;
+
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 public class AuthService(IUserService userService) : IAuthService
@@ -28,12 +33,12 @@ public class AuthService(IUserService userService) : IAuthService
 
         bool passwordVerified = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         Log.Debug("Password verification for {Email}: {PasswordVerified}", email, passwordVerified);
-        
+
         if (!passwordVerified)
         {
             user.FailedLoginAttempts++;
             Log.Information("Failed login attempts for {Email}: {FailedLoginAttempts}", email, user.FailedLoginAttempts);
-            
+
             if (user.FailedLoginAttempts >= 5)
             {
                 user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
@@ -68,5 +73,31 @@ public class AuthService(IUserService userService) : IAuthService
 
         await _userService.AddUser(user);
         return user;
+    }
+    public string CreateToken(User user, string secretKey, string issuer, string audience)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(secretKey);
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Role, user.Role),
+            new("organizationId", user.OrganizationId)
+        };
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddMinutes(15),
+            Issuer = issuer,
+            Audience = audience,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 }

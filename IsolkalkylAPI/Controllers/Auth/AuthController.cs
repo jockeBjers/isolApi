@@ -6,10 +6,11 @@ using FluentValidation;
 
 [Route("api/auth")]
 [ApiController]
-public class AuthController(IAuthService authService, Validator validator) : ControllerBase
+public class AuthController(IAuthService authService, Validator validator, IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly Validator _validator = validator;
+    private readonly IConfiguration _configuration = configuration;
 
     [HttpPost("login")]
     public async Task<ActionResult> LogIn([FromBody] LoginRequest request)
@@ -40,7 +41,15 @@ public class AuthController(IAuthService authService, Validator validator) : Con
                 return BadRequest("Invalid email or password");
             }
 
-            var response = new Response(result.Name);
+            // Generate JWT token
+            var accessToken = _authService.CreateToken(result,
+                _configuration["Jwt:Key"]!,
+                _configuration["Jwt:Issuer"]!,
+                _configuration["Jwt:Audience"]!
+            );
+
+            var response = new LoginResponse(result.Name, accessToken);
+            Log.Information("User {Name} logged in successfully", result.Name);
             return Ok(response);
         }
         catch (Exception ex)
