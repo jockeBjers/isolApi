@@ -111,9 +111,14 @@ public class UserService(IDatabase DbContext) : IUserService
         return true;
     }
 
-    public async Task<User?> GetUserByRefreshToken(string refreshToken)
+    public async Task<List<User>> GetUsersWithValidRefreshTokens()
     {
-        return await _db.Users.FirstOrDefaultAsync(u =>
-            u.RefreshToken != null && u.RefreshToken.Token == refreshToken);
+        return await _db.Users
+            .Include(u => u.Organization)
+            .Include(u => u.RefreshToken)
+            .Where(u => u.RefreshToken != null &&
+                       !u.RefreshToken.IsRevoked &&
+                       u.RefreshToken.Expires > DateTime.UtcNow)
+            .ToListAsync();
     }
 }

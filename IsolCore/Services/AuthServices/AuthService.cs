@@ -111,9 +111,13 @@ public class AuthService(IUserService userService) : IAuthService
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
 
+        var tokenString = Convert.ToBase64String(randomBytes);
+
+        var hashedToken = BCrypt.Net.BCrypt.HashPassword(tokenString, workFactor: 12);
+
         return new RefreshToken
         {
-            Token = Convert.ToBase64String(randomBytes),
+            Token = hashedToken,
             Expires = DateTime.UtcNow.AddDays(7),
             Created = DateTime.UtcNow,
             IsRevoked = false
@@ -145,23 +149,23 @@ public class AuthService(IUserService userService) : IAuthService
 
     public async Task<User?> ValidateRefreshTokenAsync(string refreshToken)
     {
-        var user = await _userService.GetUserByRefreshToken(refreshToken);
-        if (user == null)
+        // Get all users with valid refresh tokens
+        var users = await _userService.GetUsersWithValidRefreshTokens();
+
+        foreach (var user in users)
         {
-            Log.Warning("Refresh token validation failed: token not found");
-            return null;
+            if (user.RefreshToken != null &&
+                !user.RefreshToken.IsRevoked &&
+                user.RefreshToken.Expires > DateTime.UtcNow &&
+                BCrypt.Net.BCrypt.Verify(refreshToken, user.RefreshToken.Token)) // verify hash
+            {
+                Log.Debug("Refresh token validated successfully for user {UserId}", user.Id);
+                return user;
+            }
         }
 
-        // Check if token is expired or revoked
-        if (user.RefreshToken?.Expires < DateTime.UtcNow ||
-            user.RefreshToken?.IsRevoked == true)
-        {
-            Log.Warning("Refresh token validation failed: token expired or revoked for user {UserId}", user.Id);
-            return null;
-        }
-
-        Log.Debug("Refresh token validated successfully for user {UserId}", user.Id);
-        return user;
+        Log.Warning("Refresh token validation failed: token not found or invalid");
+        return null;
     }
 
     public async Task<bool> RevokeRefreshTokenAsync(int userId)
@@ -195,18 +199,10 @@ public class AuthService(IUserService userService) : IAuthService
     {
         try
         {
-            var user = await _userService.GetUserByRefreshToken(refreshToken);
+            var user = await ValidateRefreshTokenAsync(refreshToken);
             if (user == null)
             {
-                Log.Warning("Refresh failed: token not found");
-                return null;
-            }
-
-            // Validate token without revoking it yet
-            if (user.RefreshToken?.Expires < DateTime.UtcNow ||
-                user.RefreshToken?.IsRevoked == true)
-            {
-                Log.Warning("Refresh failed: token expired or revoked for user {UserId}", user.Id);
+                Log.Warning("Refresh failed: token validation failed");
                 return null;
             }
 
@@ -220,6 +216,7 @@ public class AuthService(IUserService userService) : IAuthService
                 Log.Warning("No existing refresh token found for user {UserId}", user.Id);
                 return null;
             }
+            
             user.RefreshToken.IsRevoked = true;
             var tempOldToken = user.RefreshToken;
             user.RefreshToken = newRefreshToken;
