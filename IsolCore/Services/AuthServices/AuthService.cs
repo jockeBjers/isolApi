@@ -104,24 +104,25 @@ public class AuthService(IUserService userService) : IAuthService
         return tokenHandler.WriteToken(token);
     }
 
-    public RefreshToken GenerateRefreshToken()
+    public (RefreshToken HashedToken, string PlainToken) GenerateRefreshToken()
     {
-        // Generate rndom token
+        // Generate random token
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
 
-        var tokenString = Convert.ToBase64String(randomBytes);
+        var plainToken = Convert.ToBase64String(randomBytes);
+        var hashedToken = BCrypt.Net.BCrypt.HashPassword(plainToken, workFactor: 12);
 
-        var hashedToken = BCrypt.Net.BCrypt.HashPassword(tokenString, workFactor: 12);
-
-        return new RefreshToken
+        var refreshToken = new RefreshToken
         {
-            Token = hashedToken,
+            Token = hashedToken, // Store hashed version
             Expires = DateTime.UtcNow.AddDays(7),
             Created = DateTime.UtcNow,
             IsRevoked = false
         };
+
+        return (refreshToken, plainToken); 
     }
 
     public async Task<bool> SetUserRefreshTokenAsync(int userId, RefreshToken refreshToken)
@@ -195,7 +196,7 @@ public class AuthService(IUserService userService) : IAuthService
         }
     }
 
-    public async Task<(string AccessToken, RefreshToken NewRefreshToken)?> RefreshTokensAsync(string refreshToken, string secretKey, string issuer, string audience)
+    public async Task<(string AccessToken, string NewRefreshToken)?> RefreshTokensAsync(string refreshToken, string secretKey, string issuer, string audience)
     {
         try
         {
@@ -208,7 +209,7 @@ public class AuthService(IUserService userService) : IAuthService
 
             // Generate new tokens
             var accessToken = CreateToken(user, secretKey, issuer, audience);
-            var newRefreshToken = GenerateRefreshToken();
+            var (newRefreshToken, plainToken) = GenerateRefreshToken();
 
             // Revoke old token and set new one
             if (user.RefreshToken == null)
@@ -218,21 +219,12 @@ public class AuthService(IUserService userService) : IAuthService
             }
             
             user.RefreshToken.IsRevoked = true;
-            var tempOldToken = user.RefreshToken;
             user.RefreshToken = newRefreshToken;
 
-            try
-            {
-                await _userService.UpdateUser(user.Id, user);
-                Log.Information("Tokens refreshed successfully for user {UserId}", user.Id);
-                return (accessToken, newRefreshToken);
-            }
-            catch
-            {
-                user.RefreshToken = tempOldToken;
-                user.RefreshToken.IsRevoked = false;
-                throw;
-            }
+            await _userService.UpdateUser(user.Id, user);
+            Log.Information("Tokens refreshed successfully for user {UserId}", user.Id);
+            
+            return (accessToken, plainToken); 
         }
         catch (Exception ex)
         {

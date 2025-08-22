@@ -47,10 +47,10 @@ public class AuthController(IAuthService authService, Validator validator, IConf
             );
 
             // generate a fresh refresh token on login
-            var newRefreshToken = _authService.GenerateRefreshToken();
+            var (newRefreshToken, plainToken) = _authService.GenerateRefreshToken();
             await _authService.SetUserRefreshTokenAsync(result.Id, newRefreshToken);
 
-            var response = new LoginResponse(result.Name, accessToken, newRefreshToken.Token);
+            var response = new LoginResponse(result.Name, accessToken, plainToken); 
             Log.Information("User {Name} logged in successfully", result.Name);
             return Ok(response);
         }
@@ -107,7 +107,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         }
 
         Log.Information("Refreshed tokens successfully");
-        return Ok(new RefreshResponse(result.Value.AccessToken, result.Value.NewRefreshToken.Token));
+        return Ok(new RefreshResponse(result.Value.AccessToken, result.Value.NewRefreshToken));
     }
 
     [HttpPost("logout")]

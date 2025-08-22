@@ -7,9 +7,9 @@ public interface IAuthService
     Task<User?> GetUserByEmail(string email);
     string CreateToken(User user, string secretKey, string issuer, string audience);
 
-    RefreshToken GenerateRefreshToken();
+    (RefreshToken HashedToken, string PlainToken) GenerateRefreshToken();
     Task<bool> SetUserRefreshTokenAsync(int userId, RefreshToken refreshToken);
     Task<User?> ValidateRefreshTokenAsync(string refreshToken);
     Task<bool> RevokeRefreshTokenAsync(int userId);
-    Task<(string AccessToken, RefreshToken NewRefreshToken)?> RefreshTokensAsync(string refreshToken, string secretKey, string issuer, string audience);
+    Task<(string AccessToken, string NewRefreshToken)?> RefreshTokensAsync(string refreshToken, string secretKey, string issuer, string audience);
 }
