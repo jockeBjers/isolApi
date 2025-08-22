@@ -110,4 +110,10 @@ public class UserService(IDatabase DbContext) : IUserService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<User?> GetUserByRefreshToken(string refreshToken)
+    {
+        return await _db.Users.FirstOrDefaultAsync(u =>
+            u.RefreshToken != null && u.RefreshToken.Token == refreshToken);
+    }
 }

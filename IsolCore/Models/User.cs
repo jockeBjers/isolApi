@@ -25,4 +25,6 @@ public class User
 
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
+
+    public RefreshToken? RefreshToken { get; set; }
 }

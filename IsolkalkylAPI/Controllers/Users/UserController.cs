@@ -1,5 +1,7 @@
 
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace IsolkalkylAPI.Controllers.Users;
 
 [Route("api/user")]
@@ -14,6 +16,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetUsers()
     {
         var users = await _userService.GetAllUsers();
@@ -60,7 +63,7 @@ public class UserController : ControllerBase
         {
             Id = userDto.Id,
             Name = userDto.Name,
-            PasswordHash = "password",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("GenerateSecurePassword()", 12),
             Email = userDto.Email,
             OrganizationId = userDto.OrganizationId,
             Phone = userDto.Phone,
