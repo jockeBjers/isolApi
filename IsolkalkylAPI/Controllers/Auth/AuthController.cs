@@ -1,9 +1,7 @@
-
 namespace IsolkalkylAPI.Controllers.Auth;
 
-using IsolkalkylAPI.Controllers.Auth;
-using FluentValidation;
-
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 [Route("api/auth")]
 [ApiController]
 public class AuthController(IAuthService authService, Validator validator, IConfiguration configuration) : ControllerBase
@@ -48,7 +46,11 @@ public class AuthController(IAuthService authService, Validator validator, IConf
                 _configuration["Jwt:Audience"]!
             );
 
-            var response = new LoginResponse(result.Name, accessToken);
+            // generate a fresh refresh token on login
+            var newRefreshToken = _authService.GenerateRefreshToken();
+            await _authService.SetUserRefreshTokenAsync(result.Id, newRefreshToken);
+
+            var response = new LoginResponse(result.Name, accessToken, newRefreshToken.Token);
             Log.Information("User {Name} logged in successfully", result.Name);
             return Ok(response);
         }
@@ -81,4 +83,65 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         Log.Information("User {Name} registered successfully.", request.Name);
         return Created("User created", response);
     }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        if (string.IsNullOrEmpty(request.RefreshToken))
+        {
+            Log.Warning("Refresh token is missing");
+            return BadRequest("Refresh token is required");
+        }
+
+        var result = await _authService.RefreshTokensAsync(
+            request.RefreshToken,
+            _configuration["Jwt:Key"]!,
+            _configuration["Jwt:Issuer"]!,
+            _configuration["Jwt:Audience"]!
+        );
+
+        if (result == null)
+        {
+            Log.Warning("Invalid refresh token: {RefreshToken}", request.RefreshToken);
+            return BadRequest("Invalid refresh token");
+        }
+
+        Log.Information("Refreshed tokens successfully");
+        return Ok(new RefreshResponse(result.Value.AccessToken, result.Value.NewRefreshToken.Token));
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<ActionResult> Logout()
+    {
+        try
+        {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                Log.Warning("Logout attempt with invalid user ID claim");
+                return BadRequest("Invalid user session");
+            }
+
+            // Revoke refresh token
+            var success = await _authService.RevokeRefreshTokenAsync(userId);
+            if (!success)
+            {
+                Log.Warning("Failed to revoke refresh token for user {UserId}", userId);
+                return StatusCode(500, "Logout failed");
+            }
+
+            Log.Information("User {UserId} logged out successfully", userId);
+            return Ok(new LogoutResponse("Logged out successfully"));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during logout");
+            return StatusCode(500, "An error occurred during logout");
+        }
+    }
+
+
+
 }

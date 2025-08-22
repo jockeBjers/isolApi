@@ -2,6 +2,7 @@ namespace IsolCore.Services.AuthServices;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -17,6 +18,7 @@ public class AuthService(IUserService userService) : IAuthService
 
     public async Task<User?> Login(string email, string password)
     {
+
         var user = await _userService.GetUserByEmail(email);
         if (user == null)
         {
@@ -44,6 +46,7 @@ public class AuthService(IUserService userService) : IAuthService
                 user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
                 Log.Warning("User {Email} locked out until {LockoutEnd}", email, user.LockoutEnd);
             }
+
             await _userService.UpdateUser(user.Id, user);
             return null;
         }
@@ -99,5 +102,145 @@ public class AuthService(IUserService userService) : IAuthService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    public RefreshToken GenerateRefreshToken()
+    {
+        // Generate rndom token
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+
+        return new RefreshToken
+        {
+            Token = Convert.ToBase64String(randomBytes),
+            Expires = DateTime.UtcNow.AddDays(7),
+            Created = DateTime.UtcNow,
+            IsRevoked = false
+        };
+    }
+
+    public async Task<bool> SetUserRefreshTokenAsync(int userId, RefreshToken refreshToken)
+    {
+        try
+        {
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
+            {
+                Log.Warning("Failed to set refresh token: User {UserId} not found", userId);
+                return false;
+            }
+
+            user.RefreshToken = refreshToken;
+            await _userService.UpdateUser(user.Id, user);
+            Log.Debug("Refresh token set for user {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error setting refresh token for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<User?> ValidateRefreshTokenAsync(string refreshToken)
+    {
+        var user = await _userService.GetUserByRefreshToken(refreshToken);
+        if (user == null)
+        {
+            Log.Warning("Refresh token validation failed: token not found");
+            return null;
+        }
+
+        // Check if token is expired or revoked
+        if (user.RefreshToken?.Expires < DateTime.UtcNow ||
+            user.RefreshToken?.IsRevoked == true)
+        {
+            Log.Warning("Refresh token validation failed: token expired or revoked for user {UserId}", user.Id);
+            return null;
+        }
+
+        Log.Debug("Refresh token validated successfully for user {UserId}", user.Id);
+        return user;
+    }
+
+    public async Task<bool> RevokeRefreshTokenAsync(int userId)
+    {
+        try
+        {
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
+            {
+                Log.Warning("Failed to revoke refresh token: User {UserId} not found", userId);
+                return false;
+            }
+
+            if (user.RefreshToken != null)
+            {
+                user.RefreshToken.IsRevoked = true;
+                await _userService.UpdateUser(user.Id, user);
+                Log.Information("Refresh token revoked for user {UserId}", userId);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error revoking refresh token for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<(string AccessToken, RefreshToken NewRefreshToken)?> RefreshTokensAsync(string refreshToken, string secretKey, string issuer, string audience)
+    {
+        try
+        {
+            var user = await _userService.GetUserByRefreshToken(refreshToken);
+            if (user == null)
+            {
+                Log.Warning("Refresh failed: token not found");
+                return null;
+            }
+
+            // Validate token without revoking it yet
+            if (user.RefreshToken?.Expires < DateTime.UtcNow ||
+                user.RefreshToken?.IsRevoked == true)
+            {
+                Log.Warning("Refresh failed: token expired or revoked for user {UserId}", user.Id);
+                return null;
+            }
+
+            // Generate new tokens
+            var accessToken = CreateToken(user, secretKey, issuer, audience);
+            var newRefreshToken = GenerateRefreshToken();
+
+            // Revoke old token and set new one
+            if (user.RefreshToken == null)
+            {
+                Log.Warning("No existing refresh token found for user {UserId}", user.Id);
+                return null;
+            }
+            user.RefreshToken.IsRevoked = true;
+            var tempOldToken = user.RefreshToken;
+            user.RefreshToken = newRefreshToken;
+
+            try
+            {
+                await _userService.UpdateUser(user.Id, user);
+                Log.Information("Tokens refreshed successfully for user {UserId}", user.Id);
+                return (accessToken, newRefreshToken);
+            }
+            catch
+            {
+                user.RefreshToken = tempOldToken;
+                user.RefreshToken.IsRevoked = false;
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error refreshing tokens");
+            return null;
+        }
     }
 }
