@@ -110,20 +110,18 @@ public class UserController(IUserService userService, Validator validator) : Con
             if (existingUser != null)
                 return Conflict("User with this email already exists");
 
-            var password = request.InitialPassword ?? Guid.NewGuid().ToString().Substring(0, 8);
-
             var user = new User
             {
                 Name = request.Name,
                 Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, 12),
                 OrganizationId = request.OrganizationId,
                 Phone = request.Phone,
                 Role = request.Role
             };
 
             await _userService.AddUser(user);
-
+            
             Log.Information("User created successfully: {Email}", request.Email);
 
             var response = new UserResponse(
@@ -295,7 +293,7 @@ public class UserController(IUserService userService, Validator validator) : Con
         {
             var user = await _userService.GetUserByEmail(request.Email);
             if (user == null)
-            {                
+            {
                 Log.Warning("Password reset requested for non-existent email: {Email}", request.Email);
                 return Ok("If the email exists, a password reset link has been sent");
             }

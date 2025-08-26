@@ -26,7 +26,7 @@ public record CreateUserRequest(
     string OrganizationId,
     string? Phone,
     string Role,
-    string? InitialPassword = null
+    string? Password = null
 );
 
 public record UpdateUserRequest(

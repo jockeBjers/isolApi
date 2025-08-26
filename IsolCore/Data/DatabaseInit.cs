@@ -57,7 +57,7 @@ private async Task SeedDatabase()
             OrganizationId = "50522",
             Phone = "011 22 44 00",
             Role = "Admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password")
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!")
         });
 
         _db.Users.Add(new User
@@ -67,7 +67,7 @@ private async Task SeedDatabase()
             OrganizationId = "50522",
             Phone = "011 22 44 01",
             Role = "User",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password")
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!")
         });
 
         await _db.SaveChangesAsync(); 
