@@ -24,7 +24,7 @@ public class User
     public virtual Organization? Organization { get; set; }
 
     public int FailedLoginAttempts { get; set; }
-    public DateTime? LockoutEnd { get; set; }
+    public DateTime? LockoutUntil { get; set; }
 
     public RefreshToken? RefreshToken { get; set; }
 }

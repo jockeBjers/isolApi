@@ -25,9 +25,9 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         {
             // First check if user exists and is locked out
             var user = await _authService.GetUserByEmail(request.Email);
-            if (user != null && user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+            if (user != null && user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
             {
-                var remainingLockoutTime = user.LockoutEnd.Value - DateTime.UtcNow;
+                var remainingLockoutTime = user.LockoutUntil.Value - DateTime.UtcNow;
                 Log.Warning("Login attempt for locked out user {Email}. Locked out for {Minutes} more minutes.", request.Email, Math.Ceiling(remainingLockoutTime.TotalMinutes));
                 return BadRequest($"Account is locked due to too many failed attempts. Try again in {Math.Ceiling(remainingLockoutTime.TotalMinutes)} minutes");
             }

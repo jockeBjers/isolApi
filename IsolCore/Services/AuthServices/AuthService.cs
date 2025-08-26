@@ -18,7 +18,8 @@ public class AuthService(IUserService userService) : IAuthService
 
     public async Task<User?> Login(string email, string password)
     {
-
+        var lockoutTimer = 5;
+        var maxFailedAttempts = 5;
         var user = await _userService.GetUserByEmail(email);
         if (user == null)
         {
@@ -26,25 +27,36 @@ public class AuthService(IUserService userService) : IAuthService
             return null;
         }
 
-        // Check lockout
-        if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+        // Check if user is currently locked out
+        if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
         {
-            Log.Warning("Login failed: User {Email} is locked out until {LockoutEnd}", email, user.LockoutEnd);
+            Log.Warning("Login failed: User {Email} is locked out until {LockoutEnd}", email, user.LockoutUntil);
             return null;
         }
 
+        // If lockout period has expired, reset attempts and lockout
+        if (user.LockoutUntil.HasValue && user.LockoutUntil.Value <= DateTime.UtcNow)
+        {
+            user.FailedLoginAttempts = 0;
+            user.LockoutUntil = null;
+            Log.Information("Lockout period expired for {Email}, resetting failed login attempts", email);
+        }
+
+        // verify password
         bool passwordVerified = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         Log.Debug("Password verification for {Email}: {PasswordVerified}", email, passwordVerified);
 
+        // if password is incorrect, increment failed attempts
         if (!passwordVerified)
         {
             user.FailedLoginAttempts++;
             Log.Information("Failed login attempts for {Email}: {FailedLoginAttempts}", email, user.FailedLoginAttempts);
 
-            if (user.FailedLoginAttempts >= 5)
+            // If failed attempts reach threshold, set lockout
+            if (user.FailedLoginAttempts >= maxFailedAttempts)
             {
-                user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
-                Log.Warning("User {Email} locked out until {LockoutEnd}", email, user.LockoutEnd);
+                user.LockoutUntil = DateTime.UtcNow.AddMinutes(lockoutTimer);
+                Log.Warning("User {Email} locked out until {LockoutEnd}", email, user.LockoutUntil);
             }
 
             await _userService.UpdateUser(user.Id, user);
@@ -54,7 +66,7 @@ public class AuthService(IUserService userService) : IAuthService
         // Reset on success
         Log.Information("Login successful for {Email}", email);
         user.FailedLoginAttempts = 0;
-        user.LockoutEnd = null;
+        user.LockoutUntil = null;
         await _userService.UpdateUser(user.Id, user);
 
         return user;
@@ -116,13 +128,13 @@ public class AuthService(IUserService userService) : IAuthService
 
         var refreshToken = new RefreshToken
         {
-            Token = hashedToken, // Store hashed version
+            Token = hashedToken,
             Expires = DateTime.UtcNow.AddDays(7),
             Created = DateTime.UtcNow,
             IsRevoked = false
         };
 
-        return (refreshToken, plainToken); 
+        return (refreshToken, plainToken);
     }
 
     public async Task<bool> SetUserRefreshTokenAsync(int userId, RefreshToken refreshToken)
@@ -217,14 +229,14 @@ public class AuthService(IUserService userService) : IAuthService
                 Log.Warning("No existing refresh token found for user {UserId}", user.Id);
                 return null;
             }
-            
+
             user.RefreshToken.IsRevoked = true;
             user.RefreshToken = newRefreshToken;
 
             await _userService.UpdateUser(user.Id, user);
             Log.Information("Tokens refreshed successfully for user {UserId}", user.Id);
-            
-            return (accessToken, plainToken); 
+
+            return (accessToken, plainToken);
         }
         catch (Exception ex)
         {
