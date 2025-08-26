@@ -10,5 +10,6 @@ public interface IUserService
     Task<bool> RemoveUserById(int userId);
     Task<User?> UpdateUserAdmin(int userId, User updatedUser);
     Task<User?> UpdateUser(int userId, User updatedUser);
+    Task<bool> UpdateUserPassword(int userId, string newPassword);
     Task<List<User>> GetUsersWithValidRefreshTokens();
 }

@@ -93,7 +93,7 @@ public class UserService(IDatabase DbContext) : IUserService
         existingUser.Email = updatedUser.Email;
         existingUser.Phone = updatedUser.Phone;
         existingUser.FailedLoginAttempts = updatedUser.FailedLoginAttempts;
-        existingUser.LockoutEnd = updatedUser.LockoutEnd;
+        existingUser.LockoutUntil = updatedUser.LockoutUntil;
 
         await _db.SaveChangesAsync();
 
