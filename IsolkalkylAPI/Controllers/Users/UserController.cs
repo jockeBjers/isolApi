@@ -1,75 +1,203 @@
 
 
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-
+using Serilog;
 namespace IsolkalkylAPI.Controllers.Users;
 
 [Route("api/user")]
 [ApiController]
-public class UserController : ControllerBase
+[Authorize]
+public class UserController(IUserService userService, Validator validator) : ControllerBase
 {
-    private readonly IUserService _userService;
-
-    public UserController(IUserService userService)
-    {
-        _userService = userService;
-    }
+    private readonly IUserService _userService = userService;
+    private readonly Validator _validator = validator;
 
     [HttpGet("users")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await _userService.GetAllUsers();
-        var userDtos = users.Select(user => new UserDto
+        try
         {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            OrganizationId = user.OrganizationId,
-            Phone = user.Phone,
-            Role = user.Role,
-            OrganizationName = user.Organization?.Name
-        }).ToList();
-        return Ok(userDtos);
+
+            var users = await _userService.GetAllUsers();
+            var response = users.Select(user => new UserListResponse(
+                    user.Id,
+                    user.Name,
+                    user.Email,
+                    user.Role,
+                    user.Organization?.Name
+                )).ToList();
+            Log.Information("Retrieved {Count} users for admin", response.Count);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting all users");
+            return StatusCode(500, "An error occurred while retrieving users");
+        }
     }
 
+
     [HttpGet("user")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
     {
+        var emailRequest = new GetUserByEmailRequest(email);
+        var validation = _validator.Validate(new GetUserByEmailValidator(), emailRequest);
+        if (validation != null)
+            return validation;
+
         var user = await _userService.GetUserByEmail(email);
         if (user == null)
-            return NotFound();
+            return NotFound($"User with email {email} not found");
 
-        var userDto = new UserDto
-        {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            OrganizationId = user.OrganizationId,
-            Phone = user.Phone,
-            Role = user.Role,
-            OrganizationName = user.Organization?.Name
-        };
+        var userDto = new UserResponse(
+            user.Id,
+            user.Name,
+            user.Email,
+            user.OrganizationId,
+            user.Phone,
+            user.Role,
+            user.Organization?.Name
+        );
         return Ok(userDto);
     }
 
-    [HttpPost("create")]
-    public async Task<IActionResult> AddUser([FromBody] UserDto userDto)
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetCurrentUserProfile()
     {
-        if (userDto == null)
-            return BadRequest();
-
-        var user = new User
+        try
         {
-            Id = userDto.Id,
-            Name = userDto.Name,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("GenerateSecurePassword()", 12),
-            Email = userDto.Email,
-            OrganizationId = userDto.OrganizationId,
-            Phone = userDto.Phone,
-            Role = userDto.Role,
-        };
-        await _userService.AddUser(user);
-        return CreatedAtAction(nameof(GetUserByEmail), new { email = user.Email }, userDto);
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(userEmail))
+                return BadRequest("Invalid user session");
+
+            var user = await _userService.GetUserByEmail(userEmail);
+            if (user == null)
+                return NotFound("User not found");
+
+            var response = new UserResponse(
+                user.Id,
+                user.Name,
+                user.Email,
+                user.OrganizationId,
+                user.Phone,
+                user.Role,
+                user.Organization?.Name
+            );
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting current user profile");
+            return StatusCode(500, "An error occurred while retrieving user profile");
+        }
+    }
+
+    [HttpPost("create")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+
+        var validation = _validator.Validate(new UserValidator(), request);
+        if (validation != null)
+            return validation;
+        try
+        {
+            var existingUser = await _userService.GetUserByEmail(request.Email);
+            if (existingUser != null)
+                return Conflict("User with this email already exists");
+
+            var password = request.InitialPassword ?? Guid.NewGuid().ToString().Substring(0, 8);
+
+            var user = new User
+            {
+                Name = request.Name,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12),
+                OrganizationId = request.OrganizationId,
+                Phone = request.Phone,
+                Role = request.Role
+            };
+
+            await _userService.AddUser(user);
+
+            Log.Information("User created successfully: {Email}", request.Email);
+
+            var response = new UserResponse(
+                user.Id,
+                user.Name,
+                user.Email,
+                user.OrganizationId,
+                user.Phone,
+                user.Role,
+                null
+            );
+
+            return CreatedAtAction(nameof(GetUserByEmail), new { email = user.Email }, response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating user with email {Email}", request.Email);
+            return StatusCode(500, "An error occurred while creating user");
+        }
+    }
+
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UpdateUserRequest request)
+    {
+        var validation = _validator.Validate(new UserUpdateValidator(), request);
+        if (validation != null)
+            return validation;
+
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                return BadRequest("Invalid user session");
+
+            var existingUser = await _userService.GetUserById(userId);
+            if (existingUser == null)
+                return NotFound("User not found");
+
+            // Check email uniqueness if email is being updated
+            if (!string.IsNullOrEmpty(request.Email) && request.Email != existingUser.Email)
+            {
+                var emailExists = await _userService.GetUserByEmail(request.Email);
+                if (emailExists != null)
+                    return Conflict("Email already exists");
+            }
+
+            if (!string.IsNullOrEmpty(request.Name))
+                existingUser.Name = request.Name;
+            if (!string.IsNullOrEmpty(request.Email))
+                existingUser.Email = request.Email;
+            if (!string.IsNullOrEmpty(request.Phone))
+                existingUser.Phone = request.Phone;
+
+            var updatedUser = await _userService.UpdateUser(userId, existingUser);
+            if (updatedUser == null)
+                return BadRequest("Failed to update user");
+
+            var response = new UserResponse(
+                updatedUser.Id,
+                updatedUser.Name,
+                updatedUser.Email,
+                updatedUser.OrganizationId,
+                updatedUser.Phone,
+                updatedUser.Role,
+                updatedUser.Organization?.Name
+            );
+
+            Log.Information("User profile updated successfully: {UserId}", userId);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating user profile for user {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            return StatusCode(500, "An error occurred while updating profile");
+        }
     }
 }
