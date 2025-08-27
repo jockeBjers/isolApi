@@ -20,7 +20,11 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
 
     public async Task<Organization?> GetOrganizationById(string organizationId)
     {
-        return await _db.Organizations.FindAsync(organizationId);
+        return await _db.Organizations
+       .Include(o => o.Users)
+       .Include(o => o.Projects)
+       .Include(o => o.InsulationTypes)
+       .FirstOrDefaultAsync(o => o.Id == organizationId);
     }
 
     public async Task<bool> DoesOrganizationExist(string organizationId)

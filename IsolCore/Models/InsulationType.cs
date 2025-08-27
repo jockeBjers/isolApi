@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class InsulationType
 {
@@ -10,6 +11,8 @@ public class InsulationType
     public double InsulationAreaPerMeter { get; set; }
     public string InsulationCategory { get; set; } = "heat";
 
+    [ForeignKey("OrganizationId")]
+    public string OrganizationId { get; set; }
 
     public InsulationType() { }
 
@@ -28,7 +31,7 @@ public class InsulationType
         new(){ Id = 2, Name = "50mm, 2.7m²", InsulationThickness = 0.05, InsulationAreaPerMeter = 2.7, InsulationCategory = "heat" },
         new(){ Id = 3, Name = "80mm, 1.5m²", InsulationThickness = 0.08, InsulationAreaPerMeter = 1.5, InsulationCategory = "heat" }
     };
-    
+
     // Legacy method for backward compatibility
     public static List<InsulationType> GetDefaultTypes()
     {

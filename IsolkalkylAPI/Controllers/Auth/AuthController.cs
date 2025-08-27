@@ -54,7 +54,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
             await _authService.SetUserRefreshTokenAsync(result.Id, newRefreshToken);
 
             var response = new LoginResponse(result.Name, accessToken, plainToken); 
-            Log.Information("User {Name} logged in successfully", result.Name);
+            Log.Information("User logged in successfully");
             return Ok(response);
         }
         catch (Exception ex)
@@ -83,7 +83,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         }
 
         var response = new Response(result.Name);
-        Log.Information("User {Name} registered successfully.", request.Name);
+        Log.Information("User registered successfully!");
         return Created("User created", response);
     }
 
@@ -131,11 +131,11 @@ public class AuthController(IAuthService authService, Validator validator, IConf
             var success = await _authService.RevokeRefreshTokenAsync(userId);
             if (!success)
             {
-                Log.Warning("Failed to revoke refresh token for user {UserId}", userId);
+                Log.Warning("Failed to revoke refresh token for user");
                 return StatusCode(500, "Logout failed");
             }
 
-            Log.Information("User {UserId} logged out successfully", userId);
+            Log.Information("User logged out successfully");
             return Ok(new LogoutResponse("Logged out successfully"));
         }
         catch (Exception ex)

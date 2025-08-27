@@ -14,7 +14,8 @@ public class Organization
     public required string Phone { get; set; }
     public required string Email { get; set; }
     public string? Website { get; set; }
-    
+
     public List<User> Users { get; set; } = new List<User>();
     public List<Project> Projects { get; set; } = new List<Project>();
+    public List<InsulationType> InsulationTypes { get; set; } = new List<InsulationType>();
 }
