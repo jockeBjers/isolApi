@@ -21,9 +21,9 @@ public class UserService(IDatabase DbContext) : IUserService
         return users;
     }
 
-    public async Task<bool> DoesUserExist(string username)
+    public async Task<bool> DoesUserExist(string email)
     {
-        return await _db.Users.AnyAsync(u => u.Name == username);
+        return await _db.Users.AnyAsync(u => u.Email == email);
     }
 
     public async Task<User?> GetUserByEmail(string email)

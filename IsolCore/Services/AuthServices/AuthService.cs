@@ -23,14 +23,14 @@ public class AuthService(IUserService userService) : IAuthService
         var user = await _userService.GetUserByEmail(email);
         if (user == null)
         {
-            Log.Warning("Login failed: User with email {Email} not found", email);
+            Log.Warning("Login failed: User with email not found");
             return null;
         }
 
         // Check if user is currently locked out
         if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
         {
-            Log.Warning("Login failed: User {Email} is locked out until {LockoutEnd}", email, user.LockoutUntil);
+            Log.Warning("Login failed: User is locked out until {LockoutUntil}", user.LockoutUntil?.ToLocalTime());
             return null;
         }
 
@@ -39,24 +39,24 @@ public class AuthService(IUserService userService) : IAuthService
         {
             user.FailedLoginAttempts = 0;
             user.LockoutUntil = null;
-            Log.Information("Lockout period expired for {Email}, resetting failed login attempts", email);
+            Log.Information("Lockout period expired for user, resetting failed login attempts");
         }
 
         // verify password
         bool passwordVerified = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-        Log.Debug("Password verification for {Email}: {PasswordVerified}", email, passwordVerified);
+        Log.Debug("Password verification for user: {PasswordVerified}", passwordVerified);
 
         // if password is incorrect, increment failed attempts
         if (!passwordVerified)
         {
             user.FailedLoginAttempts++;
-            Log.Information("Failed login attempts for {Email}: {FailedLoginAttempts}", email, user.FailedLoginAttempts);
+            Log.Information("Failed login attempts for user: {FailedLoginAttempts}", user.FailedLoginAttempts);
 
             // If failed attempts reach threshold, set lockout
             if (user.FailedLoginAttempts >= maxFailedAttempts)
             {
                 user.LockoutUntil = DateTime.UtcNow.AddMinutes(lockoutTimer);
-                Log.Warning("User {Email} locked out until {LockoutEnd}", email, user.LockoutUntil);
+                Log.Warning("User locked out until {LockoutUntil}", user.LockoutUntil?.ToLocalTime());
             }
 
             await _userService.UpdateUser(user.Id, user);
@@ -64,7 +64,7 @@ public class AuthService(IUserService userService) : IAuthService
         }
 
         // Reset on success
-        Log.Information("Login successful for {Email}", email);
+        Log.Information("Login successful");
         user.FailedLoginAttempts = 0;
         user.LockoutUntil = null;
         await _userService.UpdateUser(user.Id, user);
@@ -74,8 +74,12 @@ public class AuthService(IUserService userService) : IAuthService
 
     public async Task<User?> Register(string name, string password, string email, string? phoneNumber, string organizationId)
     {
-        if (await _userService.DoesUserExist(name))
+        // if email exists
+        if (await _userService.DoesUserExist(email))
+        {
+            Log.Warning("User registration failed: User with that email already exists");
             return null;
+        }
 
         var user = new User()
         {
@@ -144,18 +148,18 @@ public class AuthService(IUserService userService) : IAuthService
             var user = await _userService.GetUserById(userId);
             if (user == null)
             {
-                Log.Warning("Failed to set refresh token: User {UserId} not found", userId);
+                Log.Warning("Failed to set refresh token: User not found");
                 return false;
             }
 
             user.RefreshToken = refreshToken;
             await _userService.UpdateUser(user.Id, user);
-            Log.Debug("Refresh token set for user {UserId}", userId);
+            Log.Debug("Refresh token set for user");
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error setting refresh token for user {UserId}", userId);
+            Log.Error(ex, "Error setting refresh token for user");
             return false;
         }
     }
@@ -172,7 +176,7 @@ public class AuthService(IUserService userService) : IAuthService
                 user.RefreshToken.Expires > DateTime.UtcNow &&
                 BCrypt.Net.BCrypt.Verify(refreshToken, user.RefreshToken.Token)) // verify hash
             {
-                Log.Debug("Refresh token validated successfully for user {UserId}", user.Id);
+                Log.Debug("Refresh token validated successfully for user");
                 return user;
             }
         }
@@ -188,7 +192,7 @@ public class AuthService(IUserService userService) : IAuthService
             var user = await _userService.GetUserById(userId);
             if (user == null)
             {
-                Log.Warning("Failed to revoke refresh token: User {UserId} not found", userId);
+                Log.Warning("Failed to revoke refresh token: User not found");
                 return false;
             }
 
@@ -196,14 +200,14 @@ public class AuthService(IUserService userService) : IAuthService
             {
                 user.RefreshToken.IsRevoked = true;
                 await _userService.UpdateUser(user.Id, user);
-                Log.Information("Refresh token revoked for user {UserId}", userId);
+                Log.Information("Refresh token revoked for user");
             }
 
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error revoking refresh token for user {UserId}", userId);
+            Log.Error(ex, "Error revoking refresh token for user");
             return false;
         }
     }
@@ -226,7 +230,7 @@ public class AuthService(IUserService userService) : IAuthService
             // Revoke old token and set new one
             if (user.RefreshToken == null)
             {
-                Log.Warning("No existing refresh token found for user {UserId}", user.Id);
+                Log.Warning("No existing refresh token found for user");
                 return null;
             }
 
@@ -234,8 +238,7 @@ public class AuthService(IUserService userService) : IAuthService
             user.RefreshToken = newRefreshToken;
 
             await _userService.UpdateUser(user.Id, user);
-            Log.Information("Tokens refreshed successfully for user {UserId}", user.Id);
-
+            Log.Information("Tokens refreshed successfully for user");
             return (accessToken, plainToken);
         }
         catch (Exception ex)

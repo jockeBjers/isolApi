@@ -2,6 +2,7 @@ namespace IsolkalkylAPI.Controllers.Auth;
 
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+
 [Route("api/auth")]
 [ApiController]
 public class AuthController(IAuthService authService, Validator validator, IConfiguration configuration) : ControllerBase
@@ -9,7 +10,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
     private readonly IAuthService _authService = authService;
     private readonly Validator _validator = validator;
     private readonly IConfiguration _configuration = configuration;
-
+    
     [HttpPost("login")]
     public async Task<ActionResult> LogIn([FromBody] LoginRequest request)
     {
@@ -28,14 +29,16 @@ public class AuthController(IAuthService authService, Validator validator, IConf
             if (user != null && user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
             {
                 var remainingLockoutTime = user.LockoutUntil.Value - DateTime.UtcNow;
-                Log.Warning("Login attempt for locked out user {Email}. Locked out for {Minutes} more minutes.", request.Email, Math.Ceiling(remainingLockoutTime.TotalMinutes));
+
+                Log.Warning("Login attempt for locked user. Locked out for {Minutes} more minutes.", Math.Ceiling(remainingLockoutTime.TotalMinutes));
                 return BadRequest($"Account is locked due to too many failed attempts. Try again in {Math.Ceiling(remainingLockoutTime.TotalMinutes)} minutes");
             }
 
             var result = await _authService.Login(request.Email, request.Password);
+
             if (result == null)
             {
-                Log.Information("Invalid login attempt for {Email}", request.Email);
+                Log.Warning("Invalid login attempt");
                 return BadRequest("Invalid email or password");
             }
 
@@ -56,7 +59,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Login error for {Email}", request.Email);
+            Log.Error(ex, "Login error");
             return StatusCode(500, "An error occurred during login");
         }
     }
@@ -75,7 +78,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
         var result = await _authService.Register(request.Name, request.Password, request.Email, request.PhoneNumber, request.OrganizationId);
         if (result == null)
         {
-            Log.Warning("Registration failed: email {email} already exists.", request.Email);
+            Log.Warning("Registration failed: email already exists.");
             return BadRequest("Registration failed. Please check your details and try again.");
         }
 
@@ -102,7 +105,7 @@ public class AuthController(IAuthService authService, Validator validator, IConf
 
         if (result == null)
         {
-            Log.Warning("Invalid refresh token: {RefreshToken}", request.RefreshToken);
+            Log.Warning("Invalid refresh token attempt");
             return BadRequest("Invalid refresh token");
         }
 
