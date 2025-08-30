@@ -8,4 +8,5 @@ public interface IOrganizationService
     Task AddOrganization(Organization organization);
     Task<bool> RemoveOrganizationById(string organizationId);
     Task<Organization?> UpdateOrganization(string organizationId, Organization updatedOrganization);
+    Task<User?> GetUserWithOrganization(string userId);
 }

@@ -15,7 +15,7 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
     public async Task<List<Organization>> GetAllOrganizations()
     {
 
-        return await _db.Organizations.Include(o => o.Users).ToListAsync();
+        return await _db.Organizations.ToListAsync();
     }
 
     public async Task<Organization?> GetOrganizationById(string organizationId)
@@ -61,4 +61,19 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
         await _db.SaveChangesAsync();
         return organization;
     }
+
+    public async Task<User?> GetUserWithOrganization(string userId)
+    {
+        if (int.TryParse(userId, out int userIdInt))
+        {
+            return await _db.Users
+                .Include(u => u.Organization)
+                .FirstOrDefaultAsync(u => u.Id == userIdInt);
+        }
+        return null;
+    }
+
+    
+
+
 }
