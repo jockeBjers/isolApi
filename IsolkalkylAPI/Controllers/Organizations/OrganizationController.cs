@@ -4,14 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 
 [Route("api/organization")]
 [ApiController]
-public class OrganizationController : ControllerBase
+public class OrganizationController(IOrganizationService organizationService, Validator validator) : ControllerBase
 {
-    private readonly IOrganizationService _organizationService;
-
-    public OrganizationController(IOrganizationService organizationService)
-    {
-        _organizationService = organizationService;
-    }
+    private readonly IOrganizationService _organizationService = organizationService;
+    private readonly Validator _validator = validator;
 
     [HttpGet("organizations")]
     [Authorize(Roles = "Admin")]
@@ -111,5 +107,29 @@ public class OrganizationController : ControllerBase
             return StatusCode(500, $"An error occurred while creating the organization: {ex.Message}");
         }
 
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteOrganization(string id)
+    {
+        try
+        {
+            var organization = await _organizationService.GetOrganizationById(id);
+            if (organization == null)
+            {
+                Log.Warning("Attempt to delete non-existing organization with ID {OrganizationId}", id);
+                return NotFound($"Organization with ID {id} not found");
+            }
+
+            await _organizationService.RemoveOrganizationById(id);
+            Log.Information("Organization with ID {OrganizationId} deleted successfully", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error deleting organization with ID {OrganizationId}", id);
+            return StatusCode(500, $"An error occurred while deleting the organization: {ex.Message}");
+        }
     }
 }
