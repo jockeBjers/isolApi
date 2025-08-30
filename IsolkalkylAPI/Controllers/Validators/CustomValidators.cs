@@ -17,6 +17,36 @@ public static class ValidationExtensions
 
         return builder;
     }
+    public static IRuleBuilderOptions<T, string?> ValidateId<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
+    {
+        var builder = rule.Length(1, 50).WithMessage("ID must be between 1 and 50 characters");
+
+        if (isRequired)
+            builder = builder.NotEmpty().WithMessage("ID is required");
+
+        return builder;
+    }
+
+    public static IRuleBuilderOptions<T, string?> ValidateAddress<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
+    {
+        var builder = rule.MaximumLength(200).WithMessage("Address must not be more than 200 characters");
+
+        if (isRequired)
+            builder = builder.NotEmpty().WithMessage("Address is required");
+
+        return builder;
+    }
+
+    public static IRuleBuilderOptions<T, string?> ValidateWebsite<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
+    {
+        var builder = rule.Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+                         .WithMessage("Invalid website URL format");
+
+        if (isRequired)
+            builder = builder.NotEmpty().WithMessage("Website is required");
+
+        return builder;
+    }
 
     public static IRuleBuilderOptions<T, string?> ValidateName<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
     {
