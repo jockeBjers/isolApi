@@ -77,4 +77,39 @@ public class OrganizationController : ControllerBase
         Log.Information("Organization profile retrieved for current user");
         return Ok(orgDto);
     }
+
+
+    [HttpPost("create")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest request)
+    {
+        try
+        {
+            if (await _organizationService.DoesOrganizationExist(request.Id))
+            {
+                Log.Warning("Attempt to create duplicate organization with ID {OrganizationId}", request.Id);
+                return Conflict($"Organization with ID {request.Id} already exists");
+            }
+
+            var organization = new Organization
+            {
+                Id = request.Id,
+                Name = request.Name,
+                Address = request.Address,
+                Phone = request.Phone,
+                Email = request.Email
+            };
+
+            await _organizationService.AddOrganization(organization);
+            Log.Information("Organization with ID {OrganizationId} created successfully", request.Id);
+            return CreatedAtAction(nameof(GetOrganizationById), new { id = organization.Id }, request);
+
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating organization");
+            return StatusCode(500, $"An error occurred while creating the organization: {ex.Message}");
+        }
+
+    }
 }
