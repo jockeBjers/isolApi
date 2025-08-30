@@ -33,13 +33,6 @@ public record UpdateUserRequest(
     string? Name,
     string? Email,
     string? Phone,
-    string? Role
-);
-
-public record AdminUpdateUserRequest(
-    string? Name,
-    string? Email,
-    string? Phone,
     string? Role,
     string? OrganizationId
 );

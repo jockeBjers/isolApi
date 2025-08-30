@@ -38,7 +38,6 @@ public class UserController(IUserService userService, Validator validator) : Con
         }
     }
 
-
     [HttpGet("user")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
@@ -121,7 +120,7 @@ public class UserController(IUserService userService, Validator validator) : Con
             };
 
             await _userService.AddUser(user);
-            
+
             Log.Information("User created successfully: {Email}", request.Email);
 
             var response = new UserResponse(
@@ -159,6 +158,17 @@ public class UserController(IUserService userService, Validator validator) : Con
             var existingUser = await _userService.GetUserById(userId);
             if (existingUser == null)
                 return NotFound("User not found");
+
+            // Users can not update role or organization
+            var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (currentUserRole != "Admin" && currentUserRole != "Manager")
+            {
+                if (!string.IsNullOrEmpty(request.Role) || !string.IsNullOrEmpty(request.OrganizationId))
+                {
+                    Log.Warning("User cannot update role or organization");
+                    return BadRequest("You cannot update role or organization through this endpoint");
+                }
+            }
 
             // Check email uniqueness if email is being updated
             if (!string.IsNullOrEmpty(request.Email) && request.Email != existingUser.Email)
@@ -201,9 +211,9 @@ public class UserController(IUserService userService, Validator validator) : Con
 
     [HttpPut("admin/user/{userId}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateUserByAdmin(int userId, [FromBody] AdminUpdateUserRequest request)
+    public async Task<IActionResult> UpdateUserByAdmin(int userId, [FromBody] UpdateUserRequest request)
     {
-        var validation = _validator.Validate(new AdminUserUpdateValidator(), request);
+        var validation = _validator.Validate(new UserUpdateValidator(), request);
         if (validation != null)
             return validation;
 
