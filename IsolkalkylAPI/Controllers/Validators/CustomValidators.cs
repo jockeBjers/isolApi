@@ -39,8 +39,12 @@ public static class ValidationExtensions
 
     public static IRuleBuilderOptions<T, string?> ValidateWebsite<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
     {
-        var builder = rule.Must(uri => Uri.IsWellFormedUriString(uri, UriKind.Absolute))
-                         .WithMessage("Invalid website URL format");
+        var builder = rule.Must(uri =>
+                string.IsNullOrEmpty(uri) ||
+                Uri.IsWellFormedUriString(uri, UriKind.Absolute) ||
+                Uri.IsWellFormedUriString("https://" + uri, UriKind.Absolute)
+            )
+            .WithMessage("Invalid website URL format");
 
         if (isRequired)
             builder = builder.NotEmpty().WithMessage("Website is required");

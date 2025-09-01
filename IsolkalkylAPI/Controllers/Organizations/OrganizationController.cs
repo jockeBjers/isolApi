@@ -14,6 +14,7 @@ public class OrganizationController(IOrganizationService organizationService, Va
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetOrganizations()
     {
+
         try
         {
             var organizations = await _organizationService.GetAllOrganizations();
@@ -97,12 +98,12 @@ public class OrganizationController(IOrganizationService organizationService, Va
                 user.Organization?.Name
             )).ToList();
 
-            Log.Information("Retrieved {Count} users for organization {OrganizationId}", response.Count, id);
+            Log.Information("Retrieved {Count} users for the organization", response.Count);
             return Ok(response);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error getting users for organization {OrganizationId}", id);
+            Log.Error(ex, "Error getting users for the organization");
             return StatusCode(500, "An error occurred while retrieving users");
         }
     }
@@ -139,6 +140,95 @@ public class OrganizationController(IOrganizationService organizationService, Va
             return StatusCode(500, $"An error occurred while creating the organization: {ex.Message}");
         }
 
+    }
+
+    [HttpPut("Profile")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> UpdateOrganizationProfile([FromBody] UpdateOrganizationRequest request)
+    {
+        var validation = _validator.Validate(new OrganizationUpdateValidator(), request);
+        if (validation != null)
+            return validation;
+
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return BadRequest("Invalid instance");
+
+            var user = await _organizationService.GetUserWithOrganization(userId);
+            if (user?.Organization == null)
+                return NotFound("Organization not found");
+
+            var existingOrg = user.Organization;
+
+            if (!string.IsNullOrEmpty(request.Email) && request.Email != existingOrg.Email)
+            {
+                var emailExists = await _organizationService.GetOrganizationByEmail(request.Email);
+            }
+
+            if (!string.IsNullOrEmpty(request.Name))
+                existingOrg.Name = request.Name;
+            if (!string.IsNullOrEmpty(request.Email))
+                existingOrg.Email = request.Email;
+            if (!string.IsNullOrEmpty(request.Phone))
+                existingOrg.Phone = request.Phone;
+            if (!string.IsNullOrEmpty(request.Address))
+                existingOrg.Address = request.Address;
+
+            var updatedOrg = await _organizationService.UpdateOrganization(existingOrg.Id, existingOrg);
+            if (updatedOrg == null)
+                return BadRequest("failed to update");
+
+            var response = OrganizationDto.FromOrganization(updatedOrg);
+
+            Log.Information("Organization profile updated successfully!");
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating organization profile for the user");
+            return StatusCode(500, "An error occurred while updating organization profile");
+        }
+    }
+
+    [HttpPut("admin/organization/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateOrganization(string id, [FromBody] UpdateOrganizationRequest request)
+    {
+        var validation = _validator.Validate(new OrganizationUpdateValidator(), request);
+        if (validation != null)
+            return validation;
+
+        try
+        {
+            var existingOrg = await _organizationService.GetOrganizationById(id);
+            if (existingOrg == null)
+                return NotFound($"Error retrieving organization");
+
+            if (!string.IsNullOrEmpty(request.Name))
+                existingOrg.Name = request.Name;
+            if (!string.IsNullOrEmpty(request.Email))
+                existingOrg.Email = request.Email;
+            if (!string.IsNullOrEmpty(request.Phone))
+                existingOrg.Phone = request.Phone;
+            if (!string.IsNullOrEmpty(request.Address))
+                existingOrg.Address = request.Address;
+
+            var updatedOrg = await _organizationService.UpdateOrganization(existingOrg.Id, existingOrg);
+            if (updatedOrg == null)
+                return BadRequest("failed to update");
+
+            var response = OrganizationDto.FromOrganization(updatedOrg);
+
+            Log.Information("Organization profile updated successfully!");
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error updating organization profile for the user");
+            return StatusCode(500, "An error occurred while updating organization profile");
+        }
     }
 
     [HttpDelete("{id}")]

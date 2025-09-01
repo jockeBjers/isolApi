@@ -27,6 +27,16 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
        .FirstOrDefaultAsync(o => o.Id == organizationId);
     }
 
+    public async Task<Organization?> GetOrganizationByEmail(string email)
+    {
+        return await _db.Organizations
+        .Include(o => o.Users)
+        .Include(o => o.Projects)
+        .Include(o => o.InsulationTypes)
+        .FirstOrDefaultAsync(o => o.Id == email);
+
+    }
+
     public async Task<bool> DoesOrganizationExist(string organizationId)
     {
         return await _db.Organizations.AnyAsync(o => o.Id == organizationId);
@@ -72,7 +82,7 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
         }
         return null;
     }
-    
+
     public async Task<List<User>> GetUsersByOrganizationId(string organizationId)
     {
         return await _db.Users

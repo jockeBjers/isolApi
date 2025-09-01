@@ -10,4 +10,6 @@ public interface IOrganizationService
     Task<Organization?> UpdateOrganization(string organizationId, Organization updatedOrganization);
     Task<User?> GetUserWithOrganization(string userId);
     Task<List<User>> GetUsersByOrganizationId(string organizationId);
+
+    Task<Organization?> GetOrganizationByEmail(string email);
 }
