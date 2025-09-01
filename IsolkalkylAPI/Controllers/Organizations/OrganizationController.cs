@@ -1,7 +1,9 @@
 using System.Security.Claims;
-using IsolkalkylAPI.Controllers.Organizations;
+using IsolkalkylAPI.Controllers.Projects;
 using IsolkalkylAPI.Controllers.Users;
 using Microsoft.AspNetCore.Authorization;
+
+namespace IsolkalkylAPI.Controllers.Organizations;
 
 [Route("api/organization")]
 [ApiController]
@@ -106,6 +108,36 @@ public class OrganizationController(IOrganizationService organizationService, Va
             Log.Error(ex, "Error getting users for the organization");
             return StatusCode(500, "An error occurred while retrieving users");
         }
+    }
+
+    [HttpGet("{organizationId}/projects")]
+    public async Task<ActionResult<List<ProjectListResponse>>> GetProjectsByOrganization(string organizationId)
+    {
+        try
+        {
+            var projects = await _organizationService.GetAllProjectsInOrganization(organizationId);
+            if (projects == null)
+            {
+                Log.Warning("No projects found for the organization with that ID");
+                return NotFound("No projects found for the organization.");
+            }
+
+            var response = projects.Select(p => new ProjectListResponse(
+                p.Id,
+                p.ProjectNumber,
+                p.Name,
+                p.FromDate,
+                p.ToDate
+            )).ToList();
+            Log.Information("Retrieved {Count} projects for the organization", response.Count);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting projects for the organization");
+            return StatusCode(500, "An error occurred while retrieving projects.");
+        }
+
     }
 
     [HttpPost("create")]

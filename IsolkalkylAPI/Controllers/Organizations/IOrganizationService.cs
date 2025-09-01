@@ -12,4 +12,5 @@ public interface IOrganizationService
     Task<List<User>> GetUsersByOrganizationId(string organizationId);
 
     Task<Organization?> GetOrganizationByEmail(string email);
+    Task<List<Project>> GetAllProjectsInOrganization(string organizationId);
 }

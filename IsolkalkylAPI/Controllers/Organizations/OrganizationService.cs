@@ -90,4 +90,10 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
             .ToListAsync();
     }
 
+    public async Task<List<Project>> GetAllProjectsInOrganization(string organizationId)
+    {
+        return await _db.Projects
+            .Where(p => p.OrganizationId == organizationId)
+            .ToListAsync();
+    }
 }
