@@ -8,5 +8,6 @@ public interface IDatabase
 {
     DbSet<User> Users { get; set; }
     DbSet<Organization> Organizations { get; set; }
+    DbSet<Project> Projects { get; set; }
     Task<int> SaveChangesAsync();
 }

@@ -23,11 +23,10 @@ public class Project
     public string? ContactPerson { get; set; }
     public string? ContactNumber { get; set; }
     public string? Comment { get; set; }
-    
+
     [ForeignKey("OrganizationId")]
     public virtual Organization? Organization { get; set; }
-    
-    public List<CircularInsulatedPipe> CircularPipes { get; set; } = new List<CircularInsulatedPipe>();
 
-    public List<RectangularInsulatedPipe> RectangularPipes { get; set; } = new List<RectangularInsulatedPipe>();
+    // TODO: Add pipes later when implementing pipe functionality
+    // public List<InsulatedPipeBase> Pipes { get; set; } = new List<InsulatedPipeBase>();
 }

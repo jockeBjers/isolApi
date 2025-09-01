@@ -1,5 +1,4 @@
-
-namespace IsolCore.Services.UserServices;
+namespace IsolkalkylAPI.Controllers.Users;
 
 using Microsoft.EntityFrameworkCore;
 using IsolCore.Data;

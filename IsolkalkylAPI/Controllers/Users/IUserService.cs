@@ -1,4 +1,4 @@
-namespace IsolCore.Services.UserServices;
+namespace IsolkalkylAPI.Controllers.Users;
 
 public interface IUserService
 {
