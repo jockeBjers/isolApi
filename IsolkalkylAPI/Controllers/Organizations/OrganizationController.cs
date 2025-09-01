@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using IsolkalkylAPI.Controllers.Organizations;
+using IsolkalkylAPI.Controllers.Users;
 using Microsoft.AspNetCore.Authorization;
 
 [Route("api/organization")]
@@ -74,6 +75,37 @@ public class OrganizationController(IOrganizationService organizationService, Va
         return Ok(orgDto);
     }
 
+    [HttpGet("{id}/users")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> GetUsersByOrganization(string id)
+    {
+        try
+        {
+            var organization = await _organizationService.GetOrganizationById(id);
+            if (organization == null)
+            {
+                Log.Warning("Organization with that id not found");
+                return NotFound($"Organization with ID {id} not found");
+            }
+
+            var users = await _organizationService.GetUsersByOrganizationId(id);
+            var response = users.Select(user => new UserListResponse(
+                user.Id,
+                user.Name,
+                user.Email,
+                user.Role,
+                user.Organization?.Name
+            )).ToList();
+
+            Log.Information("Retrieved {Count} users for organization {OrganizationId}", response.Count, id);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting users for organization {OrganizationId}", id);
+            return StatusCode(500, "An error occurred while retrieving users");
+        }
+    }
 
     [HttpPost("create")]
     [Authorize(Roles = "Admin")]

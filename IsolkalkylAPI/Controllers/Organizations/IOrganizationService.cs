@@ -9,4 +9,5 @@ public interface IOrganizationService
     Task<bool> RemoveOrganizationById(string organizationId);
     Task<Organization?> UpdateOrganization(string organizationId, Organization updatedOrganization);
     Task<User?> GetUserWithOrganization(string userId);
+    Task<List<User>> GetUsersByOrganizationId(string organizationId);
 }

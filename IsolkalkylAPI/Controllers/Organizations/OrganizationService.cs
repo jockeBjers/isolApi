@@ -72,8 +72,12 @@ public class OrganizationService(IDatabase DbContext) : IOrganizationService
         }
         return null;
     }
-
     
-
+    public async Task<List<User>> GetUsersByOrganizationId(string organizationId)
+    {
+        return await _db.Users
+            .Where(u => u.OrganizationId == organizationId)
+            .ToListAsync();
+    }
 
 }
