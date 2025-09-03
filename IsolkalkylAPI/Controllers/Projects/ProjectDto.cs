@@ -38,7 +38,19 @@ public record ProjectListResponse(
     string Name,
     DateTime FromDate,
     DateTime ToDate
-);
+)
+{
+    public static ProjectListResponse FromProject(Project project)
+    {
+        return new ProjectListResponse(
+            project.Id,
+            project.ProjectNumber,
+            project.Name,
+            project.FromDate,
+            project.ToDate
+        );
+    }
+}
 
 public record CreateProjectRequest(
     string ProjectNumber,

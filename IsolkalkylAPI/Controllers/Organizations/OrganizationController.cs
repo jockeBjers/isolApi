@@ -101,13 +101,7 @@ public class OrganizationController(IOrganizationService organizationService, Va
             }
 
             var users = await _organizationService.GetUsersByOrganizationId(id);
-            var response = users.Select(user => new UserListResponse(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.Role,
-                user.Organization?.Name
-            )).ToList();
+            var response = users.Select(UserListResponse.FromUser).ToList();
 
             Log.Information("Retrieved {Count} users for the organization", response.Count);
             return Ok(response);
@@ -147,13 +141,8 @@ public class OrganizationController(IOrganizationService organizationService, Va
                 return NotFound("No projects found for the organization.");
             }
 
-            var response = projects.Select(p => new ProjectListResponse(
-                p.Id,
-                p.ProjectNumber,
-                p.Name,
-                p.FromDate,
-                p.ToDate
-            )).ToList();
+            var response = projects.Select(ProjectListResponse.FromProject).ToList();
+
             Log.Information("Retrieved {Count} projects for the organization", response.Count);
             return Ok(response);
         }
@@ -180,14 +169,7 @@ public class OrganizationController(IOrganizationService organizationService, Va
                 return Conflict($"Organization with ID {request.Id} already exists");
             }
 
-            var organization = new Organization
-            {
-                Id = request.Id,
-                Name = request.Name,
-                Address = request.Address,
-                Phone = request.Phone,
-                Email = request.Email
-            };
+            var organization = request.ToOrganization();
 
             await _organizationService.AddOrganization(organization);
             Log.Information("Organization with ID {OrganizationId} created successfully", request.Id);
@@ -227,14 +209,7 @@ public class OrganizationController(IOrganizationService organizationService, Va
                 var emailExists = await _organizationService.GetOrganizationByEmail(request.Email);
             }
 
-            if (!string.IsNullOrEmpty(request.Name))
-                existingOrg.Name = request.Name;
-            if (!string.IsNullOrEmpty(request.Email))
-                existingOrg.Email = request.Email;
-            if (!string.IsNullOrEmpty(request.Phone))
-                existingOrg.Phone = request.Phone;
-            if (!string.IsNullOrEmpty(request.Address))
-                existingOrg.Address = request.Address;
+            request.ApplyTo(existingOrg);
 
             var updatedOrg = await _organizationService.UpdateOrganization(existingOrg.Id, existingOrg);
             if (updatedOrg == null)
@@ -266,14 +241,11 @@ public class OrganizationController(IOrganizationService organizationService, Va
             if (existingOrg == null)
                 return NotFound($"Error retrieving organization");
 
-            if (!string.IsNullOrEmpty(request.Name))
-                existingOrg.Name = request.Name;
-            if (!string.IsNullOrEmpty(request.Email))
-                existingOrg.Email = request.Email;
-            if (!string.IsNullOrEmpty(request.Phone))
-                existingOrg.Phone = request.Phone;
-            if (!string.IsNullOrEmpty(request.Address))
-                existingOrg.Address = request.Address;
+            if (!string.IsNullOrEmpty(request.Email) && request.Email != existingOrg.Email)
+            {
+                var emailExists = await _organizationService.GetOrganizationByEmail(request.Email);
+            }
+            request.ApplyTo(existingOrg);
 
             var updatedOrg = await _organizationService.UpdateOrganization(existingOrg.Id, existingOrg);
             if (updatedOrg == null)
