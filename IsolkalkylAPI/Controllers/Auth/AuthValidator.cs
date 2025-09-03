@@ -1,7 +1,4 @@
 namespace IsolkalkylAPI.Controllers.Auth;
-using FluentValidation;
-using IsolkalkylAPI.Controllers.Validators;
-
 public class LoginValidator : AbstractValidator<LoginRequest>
 {
     public LoginValidator()

@@ -1,8 +1,3 @@
-using System.Security.Claims;
-using IsolkalkylAPI.Controllers.Projects;
-using IsolkalkylAPI.Controllers.Users;
-using Microsoft.AspNetCore.Authorization;
-
 namespace IsolkalkylAPI.Controllers.Organizations;
 
 [Route("api/organization")]
@@ -144,6 +139,9 @@ public class OrganizationController(IOrganizationService organizationService, Va
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest request)
     {
+        var validation = _validator.Validate(new OrganizationValidator(), request);
+        if (validation != null)
+            return validation;
         try
         {
             if (await _organizationService.DoesOrganizationExist(request.Id))
@@ -163,8 +161,8 @@ public class OrganizationController(IOrganizationService organizationService, Va
 
             await _organizationService.AddOrganization(organization);
             Log.Information("Organization with ID {OrganizationId} created successfully", request.Id);
-            return CreatedAtAction(nameof(GetOrganizationById), new { id = organization.Id }, request);
-
+            var response = OrganizationDto.FromOrganization(organization);
+            return CreatedAtAction(nameof(GetOrganizationById), new { id = organization.Id }, response);
         }
         catch (Exception ex)
         {

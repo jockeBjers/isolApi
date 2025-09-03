@@ -107,8 +107,10 @@ public class UserController(IUserService userService, Validator validator) : Con
         {
             var existingUser = await _userService.GetUserByEmail(request.Email);
             if (existingUser != null)
+            {
+                Log.Warning("User with this email already exists");
                 return Conflict("User with this email already exists");
-
+            }
             var user = new User
             {
                 Name = request.Name,
@@ -121,7 +123,7 @@ public class UserController(IUserService userService, Validator validator) : Con
 
             await _userService.AddUser(user);
 
-            Log.Information("User created successfully: {Email}", request.Email);
+            Log.Information("User created successfully");
 
             var response = new UserResponse(
                 user.Id,
@@ -137,7 +139,7 @@ public class UserController(IUserService userService, Validator validator) : Con
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error creating user with email {Email}", request.Email);
+            Log.Error(ex, "Error creating user with that email");
             return StatusCode(500, "An error occurred while creating user");
         }
     }
