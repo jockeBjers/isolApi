@@ -89,6 +89,21 @@ public static class ValidationExtensions
         return builder;
     }
 
+    public static IRuleBuilderOptions<T, string?> ValidateComment<T>(this IRuleBuilder<T, string?> rule)
+    {
+        return rule.MaximumLength(500).WithMessage("Comment must not be more than 500 characters");
+    }
+
+
+    public static IRuleBuilderOptions<T, string?> ValidateProjectNumber<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
+    {
+        var builder = rule.Length(1, 10).WithMessage("Project Number must be between 1 and 10 characters")
+                         .Matches(@"^\d+$").WithMessage("Project Number must contain only digits");
+
+        if (isRequired)
+            builder = builder.NotEmpty().WithMessage("Project Number is required");
+        return builder;
+    }
     public static IRuleBuilderOptions<T, string?> ValidatePassword<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
     {
         var builder = rule.MinimumLength(8).WithMessage("Password must be at least 8 characters")
