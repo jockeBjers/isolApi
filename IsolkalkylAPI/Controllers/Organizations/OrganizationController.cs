@@ -1,6 +1,9 @@
 namespace IsolkalkylAPI.Controllers.Organizations;
 
+using System.Security.Claims;
+
 [Route("api/organization")]
+[Authorize]
 [ApiController]
 public class OrganizationController(IOrganizationService organizationService, Validator validator) : ControllerBase
 {
@@ -79,6 +82,17 @@ public class OrganizationController(IOrganizationService organizationService, Va
     {
         try
         {
+            var userOrganizationId = User.FindFirstValue("organizationId");
+            var isAdmin = User.IsInRole("Admin");
+
+            // Only allow access if same organization or Admin
+            if (!isAdmin && id != userOrganizationId)
+            {
+                Log.Warning("Manager attempted to access users from a different organization. User org: {UserOrg}, Requested org: {RequestedOrg}",
+                    userOrganizationId, id);
+                return StatusCode(403, "Access denied - you can only view users within your organization");
+            }
+
             var organization = await _organizationService.GetOrganizationById(id);
             if (organization == null)
             {
@@ -106,10 +120,26 @@ public class OrganizationController(IOrganizationService organizationService, Va
     }
 
     [HttpGet("{organizationId}/projects")]
+    [Authorize]
     public async Task<ActionResult<List<ProjectListResponse>>> GetProjectsByOrganization(string organizationId)
     {
         try
         {
+            var userOrganizationId = User.FindFirstValue("organizationId");
+            if (string.IsNullOrEmpty(userOrganizationId))
+            {
+                Log.Warning("User has no organization ID in token");
+                return StatusCode(403, "Access denied");
+            }
+
+            // Only allow access if same organization
+            if (organizationId != userOrganizationId && !User.IsInRole("Admin"))
+            {
+                Log.Warning("User attempted to access projects from different organization. User org: {UserOrg}, Requested org: {RequestedOrg}",
+                    userOrganizationId, organizationId);
+                return StatusCode(403, "Access denied - you can only access projects within your organization");
+            }
+
             var projects = await _organizationService.GetAllProjectsInOrganization(organizationId);
             if (projects == null)
             {
