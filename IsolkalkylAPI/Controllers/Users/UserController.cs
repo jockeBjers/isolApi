@@ -21,13 +21,7 @@ public class UserController(IUserService userService, Validator validator) : Con
         {
 
             var users = await _userService.GetAllUsers();
-            var response = users.Select(user => new UserListResponse(
-                    user.Id,
-                    user.Name,
-                    user.Email,
-                    user.Role,
-                    user.Organization?.Name
-                )).ToList();
+            var response = users.Select(UserListResponse.FromUser).ToList();
             Log.Information("Retrieved {Count} users for admin", response.Count);
             return Ok(response);
         }
@@ -51,15 +45,8 @@ public class UserController(IUserService userService, Validator validator) : Con
         if (user == null)
             return NotFound($"User with email {email} not found");
 
-        var userDto = new UserResponse(
-            user.Id,
-            user.Name,
-            user.Email,
-            user.OrganizationId,
-            user.Phone,
-            user.Role,
-            user.Organization?.Name
-        );
+        var userDto = UserResponse.FromUser(user);
+        Log.Information("User retrieved successfully");
         return Ok(userDto);
     }
 
@@ -76,15 +63,8 @@ public class UserController(IUserService userService, Validator validator) : Con
             if (user == null)
                 return NotFound("User not found");
 
-            var response = new UserResponse(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.OrganizationId,
-                user.Phone,
-                user.Role,
-                user.Organization?.Name
-            );
+            var response = UserResponse.FromUser(user);
+            Log.Information("Current user profile retrieved successfully");
 
             return Ok(response);
         }
@@ -111,29 +91,13 @@ public class UserController(IUserService userService, Validator validator) : Con
                 Log.Warning("User with this email already exists");
                 return Conflict("User with this email already exists");
             }
-            var user = new User
-            {
-                Name = request.Name,
-                Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, 12),
-                OrganizationId = request.OrganizationId,
-                Phone = request.Phone,
-                Role = request.Role
-            };
+            var user = request.ToUser();
 
             await _userService.AddUser(user);
 
             Log.Information("User created successfully");
 
-            var response = new UserResponse(
-                user.Id,
-                user.Name,
-                user.Email,
-                user.OrganizationId,
-                user.Phone,
-                user.Role,
-                null
-            );
+            var response = UserResponse.FromUser(user);
 
             return CreatedAtAction(nameof(GetUserByEmail), new { email = user.Email }, response);
         }
@@ -161,17 +125,6 @@ public class UserController(IUserService userService, Validator validator) : Con
             if (existingUser == null)
                 return NotFound("User not found");
 
-            // Users can not update role or organization
-            var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (currentUserRole != "Admin" && currentUserRole != "Manager")
-            {
-                if (!string.IsNullOrEmpty(request.Role) || !string.IsNullOrEmpty(request.OrganizationId))
-                {
-                    Log.Warning("User cannot update role or organization");
-                    return BadRequest("You cannot update role or organization through this endpoint");
-                }
-            }
-
             // Check email uniqueness if email is being updated
             if (!string.IsNullOrEmpty(request.Email) && request.Email != existingUser.Email)
             {
@@ -180,26 +133,13 @@ public class UserController(IUserService userService, Validator validator) : Con
                     return Conflict("Email already exists");
             }
 
-            if (!string.IsNullOrEmpty(request.Name))
-                existingUser.Name = request.Name;
-            if (!string.IsNullOrEmpty(request.Email))
-                existingUser.Email = request.Email;
-            if (!string.IsNullOrEmpty(request.Phone))
-                existingUser.Phone = request.Phone;
+            request.ApplyTo(existingUser);
 
             var updatedUser = await _userService.UpdateUser(userId, existingUser);
             if (updatedUser == null)
                 return BadRequest("Failed to update user");
 
-            var response = new UserResponse(
-                updatedUser.Id,
-                updatedUser.Name,
-                updatedUser.Email,
-                updatedUser.OrganizationId,
-                updatedUser.Phone,
-                updatedUser.Role,
-                updatedUser.Organization?.Name
-            );
+            var response = UserResponse.FromUser(updatedUser);
 
             Log.Information("User profile updated successfully: {UserId}", userId);
             return Ok(response);
@@ -233,32 +173,14 @@ public class UserController(IUserService userService, Validator validator) : Con
                     return Conflict("Email already exists");
             }
 
-            var updatedUser = new User
-            {
-                Id = existingUser.Id,
-                Name = request.Name ?? existingUser.Name,
-                Email = request.Email ?? existingUser.Email,
-                Phone = request.Phone ?? existingUser.Phone,
-                OrganizationId = request.OrganizationId ?? existingUser.OrganizationId,
-                Role = request.Role ?? existingUser.Role,
-                PasswordHash = existingUser.PasswordHash,
-                FailedLoginAttempts = existingUser.FailedLoginAttempts,
-                LockoutUntil = existingUser.LockoutUntil
-            };
 
-            var result = await _userService.UpdateUserAdmin(userId, updatedUser);
-            if (result == null)
+            request.ApplyTo(existingUser, isAdmin: true);
+
+            var updatedUser = await _userService.UpdateUser(userId, existingUser);
+            if (updatedUser == null)
                 return BadRequest("Failed to update user");
 
-            var response = new UserResponse(
-                result.Id,
-                result.Name,
-                result.Email,
-                result.OrganizationId,
-                result.Phone,
-                result.Role,
-                result.Organization?.Name
-            );
+            var response = UserResponse.FromUser(updatedUser);
 
             Log.Information("Admin updated user {UserId} successfully", userId);
             return Ok(response);
