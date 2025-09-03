@@ -21,18 +21,19 @@ public class ProjectService(IDatabase DbContext) : IProjectService
         return _db.Projects.AnyAsync(p => p.ProjectNumber == projectNumber);
     }
 
-    public async Task<bool> RemoveProjectById(int projectId)
+    public async Task<bool> RemoveProjectById(string projectNumber)
     {
-        var project = await _db.Projects.FindAsync(projectId);
+        var project = await _db.Projects.FirstOrDefaultAsync(p => p.ProjectNumber == projectNumber);
         if (project == null) return false;
         _db.Projects.Remove(project);
         await _db.SaveChangesAsync();
         return true;
     }
 
-    public async Task<Project?> UpdateProject(int projectId, Project updatedProject)
+    public async Task<Project?> UpdateProject(string projectNumber, Project updatedProject)
     {
-        var existingProject = await _db.Projects.FindAsync(projectId);
+        var existingProject = await _db.Projects
+            .FirstOrDefaultAsync(p => p.ProjectNumber == projectNumber);
         if (existingProject == null) return null;
 
         existingProject.ProjectNumber = updatedProject.ProjectNumber;
