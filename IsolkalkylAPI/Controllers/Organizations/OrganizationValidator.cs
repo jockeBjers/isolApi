@@ -1,4 +1,3 @@
-using IsolkalkylAPI.Controllers.Validators;
 namespace IsolkalkylAPI.Controllers.Organizations;
 
 public class OrganizationValidator : AbstractValidator<CreateOrganizationRequest>

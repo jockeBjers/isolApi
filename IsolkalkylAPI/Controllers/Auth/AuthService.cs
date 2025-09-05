@@ -1,4 +1,4 @@
-namespace IsolCore.Services.AuthServices;
+namespace IsolkalkylAPI.Controllers.Auth;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

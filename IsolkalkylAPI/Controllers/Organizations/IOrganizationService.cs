@@ -1,4 +1,4 @@
-namespace IsolCore.Services.OrganizationServices;
+namespace IsolkalkylAPI.Controllers.Organizations;
 
 public interface IOrganizationService
 {

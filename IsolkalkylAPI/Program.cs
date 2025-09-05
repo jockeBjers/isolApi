@@ -2,6 +2,8 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using DotNetEnv;
+using IsolkalkylAPI.Controllers.Auth;
+using IsolkalkylAPI.Controllers.Organizations;
 using IsolkalkylAPI.Controllers.Projects;
 using IsolkalkylAPI.Controllers.Users;
 using Microsoft.OpenApi.Models;
@@ -93,7 +95,8 @@ namespace IsolkalkylAPI
             builder.Services.AddSingleton<Validator>();
             builder.Services.AddScoped<IUserService, UserService>();         
             builder.Services.AddScoped<IOrganizationService, OrganizationService>();
-            builder.Services.AddScoped<ProjectService, ProjectService>();
+            builder.Services.AddScoped<IProjectService, ProjectService>();
+            builder.Services.AddScoped<IPipeService, PipesService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
             var app = builder.Build();
@@ -114,7 +117,7 @@ namespace IsolkalkylAPI
 
 
             // Ensure SQLite DB is created and seeded on first boot
-            bool resetDatabaseToDefault = false;
+            bool resetDatabaseToDefault = true;
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();

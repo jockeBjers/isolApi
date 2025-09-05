@@ -28,5 +28,5 @@ public class Project
     public virtual Organization? Organization { get; set; }
 
     // TODO: Add pipes later when implementing pipe functionality
-    // public List<InsulatedPipeBase> Pipes { get; set; } = new List<InsulatedPipeBase>();
+    public List<InsulatedPipeBase> Pipes { get; set; } = new List<InsulatedPipeBase>();
 }

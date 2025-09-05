@@ -10,6 +10,7 @@ public class Database : DbContext, IDatabase
     public DbSet<User> Users { get; set; }
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<Project> Projects { get; set; }
+    public DbSet<InsulatedPipeBase> Pipes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,10 @@ public class Database : DbContext, IDatabase
 
         modelBuilder.Entity<User>().OwnsOne(u => u.RefreshToken);
 
+        modelBuilder.Entity<InsulatedPipeBase>()
+            .HasDiscriminator<string>("PipeType")
+            .HasValue<CircularInsulatedPipe>("Circular")
+            .HasValue<RectangularInsulatedPipe>("Rectangular");
     }
     public async Task<int> SaveChangesAsync()
     {

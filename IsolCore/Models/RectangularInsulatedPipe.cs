@@ -10,13 +10,6 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
     public double Length { get; set; }
     public double SideA { get; set; }
     public double SideB { get; set; }
-    [Required]
-    public int ProjectId { get; set; }
-    public required InsulationType FirstLayerMaterial { get; set; }
-    public InsulationType? SecondLayerMaterial { get; set; }
-    
-    [ForeignKey("ProjectId")]
-    public virtual Project? Project { get; set; }
 
     private readonly InsulationCalculator _calculator = new InsulationCalculator();
     
@@ -41,13 +34,13 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         SecondLayerMaterial = secondLayerMaterial;
     }
 
-    public double GetFirstLayerArea()
+    public override double GetFirstLayerArea()
     {
         return InsulationCalculator.CalculateRectangularFirstLayerArea(
             SideA, SideB, FirstLayerMaterial.InsulationThickness, Length);
     }
 
-    public double GetSecondLayerArea()
+    public override double GetSecondLayerArea()
     {
         if (SecondLayerMaterial == null) return 0;
         return InsulationCalculator.CalculateRectangularSecondLayerArea(
@@ -59,12 +52,12 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetTotalArea()
+    public override double GetTotalArea()
     {
         return GetFirstLayerArea() + GetSecondLayerArea();
     }
 
-    public double GetFirstLayerRolls()
+    public override double GetFirstLayerRolls()
     {
         return _calculator.CalculateRolls(
             GetFirstLayerArea(),
@@ -72,7 +65,7 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetSecondLayerRolls()
+    public override double GetSecondLayerRolls()
     {
         if (SecondLayerMaterial == null) return 0;
         return _calculator.CalculateRolls(
@@ -81,7 +74,7 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetTotalRolls()
+    public override double GetTotalRolls()
     {
         return GetFirstLayerRolls() + GetSecondLayerRolls();
     }

@@ -1,4 +1,4 @@
-namespace IsolCore.Services.AuthServices;
+namespace IsolkalkylAPI.Controllers.Auth;
 
 public interface IAuthService
 {

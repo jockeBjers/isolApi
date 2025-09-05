@@ -4,17 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 public class CircularInsulatedPipe : InsulatedPipeBase
 {
-    [Key]
-    public int Id { get; set; }
+
     public required CircularPipeSize Size { get; set; }
-    public double Length { get; set; }
-    public required InsulationType FirstLayerMaterial { get; set; }
-    public InsulationType? SecondLayerMaterial { get; set; }
-    [Required]
-    public int ProjectId { get; set; }
-    
-    [ForeignKey("ProjectId")]
-    public virtual Project? Project { get; set; }
 
     public CircularInsulatedPipe() { }
 
@@ -30,7 +21,7 @@ public class CircularInsulatedPipe : InsulatedPipeBase
 
     private readonly InsulationCalculator _calculator = new InsulationCalculator();
 
-    public double GetFirstLayerArea()
+    public override double GetFirstLayerArea()
     {
         return _calculator.CalculateFirstLayerArea(
             (int)(Size.Diameter * 1000), 
@@ -39,7 +30,7 @@ public class CircularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetSecondLayerArea()
+    public override double GetSecondLayerArea()
     {
         if (SecondLayerMaterial == null) return 0;
         return _calculator.CalculateSecondLayerArea(
@@ -49,12 +40,12 @@ public class CircularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetTotalArea()
+    public override double GetTotalArea()
     {
         return GetFirstLayerArea() + GetSecondLayerArea();
     }
 
-    public double GetFirstLayerRolls()
+    public override double GetFirstLayerRolls()
     {
         return _calculator.CalculateRolls(
             GetFirstLayerArea(),
@@ -62,7 +53,7 @@ public class CircularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetSecondLayerRolls()
+    public override double GetSecondLayerRolls()
     {
         if (SecondLayerMaterial == null) return 0;
         return _calculator.CalculateRolls(
@@ -71,7 +62,7 @@ public class CircularInsulatedPipe : InsulatedPipeBase
         );
     }
 
-    public double GetTotalRolls()
+    public override double GetTotalRolls()
     {
         return GetFirstLayerRolls() + GetSecondLayerRolls();
     }

@@ -40,12 +40,22 @@ public class DatabaseInitializer(Database db)
             {
                 Id = "50522",
                 Name = "Taekwando",
-                Address = "123 Main St",
+                Address = "123 Torget",
+                Phone = "011 22 44 20",
+                Email = "info@taektaek.com"
+            };
+            var org2 = new Organization
+            {
+                Id = "50523",
+                Name = "Tokens",
+                Address = "123 Storgatan",
                 Phone = "011 22 44 00",
                 Email = "info@taektaek.com"
             };
             _db.Organizations.Add(org);
+            _db.Organizations.Add(org2);
             await _db.SaveChangesAsync();
+
         }
 
         if (!_db.Users.Any())
@@ -56,7 +66,7 @@ public class DatabaseInitializer(Database db)
                 Email = "admin@example.com",
                 OrganizationId = "50522",
                 Phone = "011 22 44 00",
-                Role = "Admin",
+                Role = "Manager",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!")
             });
 
@@ -88,7 +98,21 @@ public class DatabaseInitializer(Database db)
                 Comment = "ring vid ankomst",
                 OrganizationId = "50522"
             };
+            var project2 = new Project
+            {
+                ProjectNumber = "505053",
+                Name = "Österskolan",
+                FromDate = DateTime.Now,
+                ToDate = DateTime.Now.AddMonths(6),
+                Address = "Skolgatan 12, finspång",
+                Customer = "Trello",
+                ContactPerson = "Alice",
+                ContactNumber = "011 22 44 02",
+                Comment = "ring vid ankomst",
+                OrganizationId = "50523"
+            };
             _db.Projects.Add(project);
+            _db.Projects.Add(project2);
             await _db.SaveChangesAsync();
         }
     }

@@ -1,12 +1,10 @@
-
-namespace IsolCore.Services.UserServices;
+namespace IsolkalkylAPI.Controllers.Organizations;
 
 using Microsoft.EntityFrameworkCore;
 using IsolCore.Data;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using IsolCore.Services.OrganizationServices;
 
 public class OrganizationService(IDatabase DbContext) : IOrganizationService
 {
