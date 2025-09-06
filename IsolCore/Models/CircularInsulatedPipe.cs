@@ -1,30 +1,35 @@
-using System;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
 public class CircularInsulatedPipe : InsulatedPipeBase
 {
+    public int? SizeId { get; set; }
 
-    public required CircularPipeSize Size { get; set; }
+    [NotMapped]
+    public CircularPipeSize? Size
+    {
+        get => SizeId.HasValue ? CircularPipeSize.StandardSizes.FirstOrDefault(s => s.Id == SizeId.Value) : null;
+        set => SizeId = value?.Id;
+    }
 
     public CircularInsulatedPipe() { }
 
-    public CircularInsulatedPipe(int id, CircularPipeSize size, double length, InsulationType firstLayerMaterial, InsulationType? secondLayerMaterial, int projectId)
+    public CircularInsulatedPipe(int id, int? sizeId, double length, InsulationType firstLayerMaterial, InsulationType? secondLayerMaterial, string projectNumber)
     {
         Id = id;
-        Size = size;
+        SizeId = sizeId;
         Length = length;
         FirstLayerMaterial = firstLayerMaterial;
         SecondLayerMaterial = secondLayerMaterial;
-        ProjectId = projectId;
+        ProjectNumber = projectNumber;
     }
 
     private readonly InsulationCalculator _calculator = new InsulationCalculator();
 
     public override double GetFirstLayerArea()
     {
+        var size = Size;
+        if (size == null) return 0;
         return _calculator.CalculateFirstLayerArea(
-            (int)(Size.Diameter * 1000), 
+            (int)(size.Diameter * 1000),
             (int)FirstLayerMaterial.InsulationThickness,
             (int)Length
         );
@@ -32,9 +37,10 @@ public class CircularInsulatedPipe : InsulatedPipeBase
 
     public override double GetSecondLayerArea()
     {
-        if (SecondLayerMaterial == null) return 0;
+        var size = Size;
+        if (SecondLayerMaterial == null || size == null) return 0;
         return _calculator.CalculateSecondLayerArea(
-            (int)(Size.Diameter * 1000), 
+            (int)(size.Diameter * 1000),
             (int)SecondLayerMaterial.InsulationThickness,
             (int)Length
         );

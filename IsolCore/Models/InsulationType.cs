@@ -5,8 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 public class InsulationType
 {
     public int Id { get; set; }
-    [Required]
-    public required string Name { get; set; }
+    public string Name { get; set; }
     public double InsulationThickness { get; set; }
     public double InsulationAreaPerMeter { get; set; }
     public string InsulationCategory { get; set; } = "heat";

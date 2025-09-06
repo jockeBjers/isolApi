@@ -32,7 +32,7 @@ public class ProjectController(IProjectService projectService, Validator validat
             // Ensure user can only access projects from their organization
             if (project.OrganizationId != userOrganizationId && !User.IsInRole("Admin"))
             {
-                Log.Warning("User attempted to access project from different organization. User org: {UserOrg}, Project org: {ProjectOrg}", 
+                Log.Warning("User attempted to access project from different organization. User org: {UserOrg}, Project org: {ProjectOrg}",
                     userOrganizationId, project.OrganizationId);
                 return StatusCode(403, "Access denied - you can only access projects within your organization");
             }
@@ -68,8 +68,7 @@ public class ProjectController(IProjectService projectService, Validator validat
             // Ensure user can only create projects for their own organization (unless Admin)
             if (request.OrganizationId != userOrganizationId && !User.IsInRole("Admin"))
             {
-                Log.Warning("User attempted to create project for different organization. User org: {UserOrg}, Request org: {RequestOrg}", 
-                    userOrganizationId, request.OrganizationId);
+                Log.Warning("User attempted to create project for different organization.");
                 return StatusCode(403, "Access denied - you can only create projects within your organization");
             }
 
@@ -120,17 +119,16 @@ public class ProjectController(IProjectService projectService, Validator validat
             // Ensure user can only update projects from their organization
             if (existingProject.OrganizationId != userOrganizationId && !User.IsInRole("Admin"))
             {
-                Log.Warning("User attempted to update project from different organization. User org: {UserOrg}, Project org: {ProjectOrg}", 
-                    userOrganizationId, existingProject.OrganizationId);
+                Log.Warning("User attempted to update project from different organization.");
                 return StatusCode(403, "Access denied - you can only update projects within your organization");
             }
 
             // Prevent users from changing organization ID (unless Admin)
-            if (!string.IsNullOrEmpty(request.OrganizationId) && 
-                request.OrganizationId != existingProject.OrganizationId && 
+            if (!string.IsNullOrEmpty(request.OrganizationId) &&
+                request.OrganizationId != existingProject.OrganizationId &&
                 !User.IsInRole("Admin"))
             {
-                Log.Warning("User attempted to change project organization. User org: {UserOrg}, Current org: {CurrentOrg}, Requested org: {RequestedOrg}", 
+                Log.Warning("User attempted to change project organization. User org: {UserOrg}, Current org: {CurrentOrg}, Requested org: {RequestedOrg}",
                     userOrganizationId, existingProject.OrganizationId, request.OrganizationId);
                 return StatusCode(403, "Access denied - you cannot change project organization");
             }
@@ -179,7 +177,7 @@ public class ProjectController(IProjectService projectService, Validator validat
             // Ensure user can only delete projects from their organization
             if (project.OrganizationId != userOrganizationId && !User.IsInRole("Admin"))
             {
-                Log.Warning("User attempted to delete project from different organization. User org: {UserOrg}, Project org: {ProjectOrg}", 
+                Log.Warning("User attempted to delete project from different organization.",
                     userOrganizationId, project.OrganizationId);
                 return StatusCode(403, "Access denied - you can only delete projects within your organization");
             }

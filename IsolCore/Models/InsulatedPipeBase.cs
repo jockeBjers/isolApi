@@ -6,8 +6,9 @@ public abstract class InsulatedPipeBase
 {
     [Key]
     public int Id { get; set; }
-    public int ProjectId { get; set; }
-    public required Project Project { get; set; }
+    [Required]
+    public string ProjectNumber { get; set; } = null!;
+    public virtual Project? Project { get; set; }
     public double Length { get; set; }
     public required InsulationType FirstLayerMaterial { get; set; }
     public InsulationType? SecondLayerMaterial { get; set; }

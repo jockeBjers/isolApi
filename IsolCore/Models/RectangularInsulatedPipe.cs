@@ -19,7 +19,7 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         double length,
         double sideA,
         double sideB,
-        int projectId,
+        string projectNumber,
         InsulationType firstLayerMaterial,
         InsulationType? secondLayerMaterial = null,
         int id = 0
@@ -29,7 +29,7 @@ public class RectangularInsulatedPipe : InsulatedPipeBase
         Length = length;
         SideA = sideA;
         SideB = sideB;
-        ProjectId = projectId;
+        ProjectNumber = projectNumber;
         FirstLayerMaterial = firstLayerMaterial;
         SecondLayerMaterial = secondLayerMaterial;
     }

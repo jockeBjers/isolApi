@@ -5,9 +5,9 @@ public class PipesService(IDatabase DbContext) : IPipeService
 {
     private readonly IDatabase _db = DbContext;
 
-    public async Task<List<InsulatedPipeBase>> GetAllPipesInProject(int projectId)
+    public async Task<List<InsulatedPipeBase>> GetAllPipesInProject(string projectNumber)
     {
-        return await _db.Pipes.Where(p => p.ProjectId == projectId).ToListAsync();
+        return await _db.Pipes.Where(p => p.ProjectNumber == projectNumber).ToListAsync();
     }
     public async Task AddPipe(InsulatedPipeBase pipe)
     {
@@ -39,7 +39,7 @@ public class PipesService(IDatabase DbContext) : IPipeService
             circularPipe.Length = updatedCircularPipe.Length;
             circularPipe.FirstLayerMaterial = updatedCircularPipe.FirstLayerMaterial;
             circularPipe.SecondLayerMaterial = updatedCircularPipe.SecondLayerMaterial;
-            circularPipe.ProjectId = updatedCircularPipe.ProjectId;
+            circularPipe.ProjectNumber = updatedCircularPipe.ProjectNumber;
         }
         else if (pipe is RectangularInsulatedPipe rectangularPipe && updatedPipe is RectangularInsulatedPipe updatedRectangularPipe)
         {
@@ -48,7 +48,7 @@ public class PipesService(IDatabase DbContext) : IPipeService
             rectangularPipe.Length = updatedRectangularPipe.Length;
             rectangularPipe.FirstLayerMaterial = updatedRectangularPipe.FirstLayerMaterial;
             rectangularPipe.SecondLayerMaterial = updatedRectangularPipe.SecondLayerMaterial;
-            rectangularPipe.ProjectId = updatedRectangularPipe.ProjectId;
+            rectangularPipe.ProjectNumber = updatedRectangularPipe.ProjectNumber;
         }
         else
         {
@@ -64,10 +64,10 @@ public class PipesService(IDatabase DbContext) : IPipeService
     }
 
 
-    public async Task<List<InsulatedPipeBase>> GetPipesByTypeInProject(int projectId, string pipeType)
+    public async Task<List<InsulatedPipeBase>> GetPipesByTypeInProject(string projectNumber, string pipeType)
     {
         return await _db.Pipes
-            .Where(p => p.ProjectId == projectId && p.GetType().Name.Equals(pipeType, StringComparison.OrdinalIgnoreCase))
+            .Where(p => p.ProjectNumber == projectNumber && p.GetType().Name.Equals(pipeType, StringComparison.OrdinalIgnoreCase))
             .ToListAsync();
     }
 
@@ -93,14 +93,14 @@ public class PipesService(IDatabase DbContext) : IPipeService
         return pipe.GetTotalArea();
     }
 
-    public async Task<Dictionary<string, double>> GetAreaByInsulationType(int projectId)
+    public async Task<Dictionary<string, double>> GetAreaByInsulationType(string projectNumber)
     {
         var materialUsage = new Dictionary<string, double>();
 
         var insulationTypes = await _db.InsulationTypes.ToListAsync();
 
         var projectPipes = await _db.Pipes
-            .Where(p => p.ProjectId == projectId)
+            .Where(p => p.ProjectNumber == projectNumber)
             .Include(p => p.FirstLayerMaterial)
             .Include(p => p.SecondLayerMaterial)
             .ToListAsync();

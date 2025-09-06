@@ -4,6 +4,7 @@ public class CircularPipeSize
     public string Label { get; set; }
     public double Diameter { get; set; }
 
+    public CircularPipeSize() { }
     public CircularPipeSize(int id, string label, double diameter)
     {
         Id = id;
