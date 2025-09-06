@@ -95,6 +95,35 @@ public class PipesService(IDatabase DbContext) : IPipeService
 
     public async Task<Dictionary<string, double>> GetAreaByInsulationType(int projectId)
     {
-      throw new NotImplementedException();
+        var materialUsage = new Dictionary<string, double>();
+
+        var insulationTypes = await _db.InsulationTypes.ToListAsync();
+
+        var projectPipes = await _db.Pipes
+            .Where(p => p.ProjectId == projectId)
+            .Include(p => p.FirstLayerMaterial)
+            .Include(p => p.SecondLayerMaterial)
+            .ToListAsync();
+
+        // calculate area for each insulation type
+        foreach (var insulationType in insulationTypes)
+        {
+            var firstLayerArea = projectPipes
+                .Where(p => p.FirstLayerMaterial?.Id == insulationType.Id)
+                .Sum(p => p.GetFirstLayerArea());
+
+            var secondLayerArea = projectPipes
+                .Where(p => p.SecondLayerMaterial?.Id == insulationType.Id)
+                .Sum(p => p.GetSecondLayerArea());
+
+            var totalArea = firstLayerArea + secondLayerArea;
+
+            if (totalArea > 0)
+            {
+                materialUsage[insulationType.Name] = totalArea;
+            }
+        }
+
+        return materialUsage;
     }
 }
