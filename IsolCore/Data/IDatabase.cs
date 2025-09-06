@@ -11,5 +11,6 @@ public interface IDatabase
     DbSet<Project> Projects { get; set; }
 
     DbSet<InsulatedPipeBase> Pipes { get; set; }
+    DbSet<InsulationType> InsulationTypes { get; set; }
     Task<int> SaveChangesAsync();
 }

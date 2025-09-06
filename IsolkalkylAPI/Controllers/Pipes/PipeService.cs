@@ -1,0 +1,100 @@
+
+namespace IsolkalkylAPI.Controllers.Pipes;
+
+public class PipesService(IDatabase DbContext) : IPipeService
+{
+    private readonly IDatabase _db = DbContext;
+
+    public async Task<List<InsulatedPipeBase>> GetAllPipesInProject(int projectId)
+    {
+        return await _db.Pipes.Where(p => p.ProjectId == projectId).ToListAsync();
+    }
+    public async Task AddPipe(InsulatedPipeBase pipe)
+    {
+        await _db.Pipes.AddAsync(pipe);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<bool> DoesPipeExist(int pipeId)
+    {
+        return await _db.Pipes.AnyAsync(p => p.Id == pipeId);
+    }
+    public async Task<bool> RemovePipeById(int pipeId)
+    {
+        var pipe = await GetPipeById(pipeId);
+        if (pipe == null) return false;
+        _db.Pipes.Remove(pipe);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<InsulatedPipeBase?> UpdatePipe(int pipeId, InsulatedPipeBase updatedPipe)
+    {
+        var pipe = await GetPipeById(pipeId);
+        if (pipe == null) return null;
+
+        if (pipe is CircularInsulatedPipe circularPipe && updatedPipe is CircularInsulatedPipe updatedCircularPipe)
+        {
+            circularPipe.Size = updatedCircularPipe.Size;
+            circularPipe.Length = updatedCircularPipe.Length;
+            circularPipe.FirstLayerMaterial = updatedCircularPipe.FirstLayerMaterial;
+            circularPipe.SecondLayerMaterial = updatedCircularPipe.SecondLayerMaterial;
+            circularPipe.ProjectId = updatedCircularPipe.ProjectId;
+        }
+        else if (pipe is RectangularInsulatedPipe rectangularPipe && updatedPipe is RectangularInsulatedPipe updatedRectangularPipe)
+        {
+            rectangularPipe.SideA = updatedRectangularPipe.SideA;
+            rectangularPipe.SideB = updatedRectangularPipe.SideB;
+            rectangularPipe.Length = updatedRectangularPipe.Length;
+            rectangularPipe.FirstLayerMaterial = updatedRectangularPipe.FirstLayerMaterial;
+            rectangularPipe.SecondLayerMaterial = updatedRectangularPipe.SecondLayerMaterial;
+            rectangularPipe.ProjectId = updatedRectangularPipe.ProjectId;
+        }
+        else
+        {
+            return null;
+        }
+
+        await _db.SaveChangesAsync();
+        return pipe;
+    }
+    public async Task<InsulatedPipeBase?> GetPipeById(int pipeId)
+    {
+        return await _db.Pipes.FirstOrDefaultAsync(p => p.Id == pipeId);
+    }
+
+
+    public async Task<List<InsulatedPipeBase>> GetPipesByTypeInProject(int projectId, string pipeType)
+    {
+        return await _db.Pipes
+            .Where(p => p.ProjectId == projectId && p.GetType().Name.Equals(pipeType, StringComparison.OrdinalIgnoreCase))
+            .ToListAsync();
+    }
+
+    /* CALCULATIONS */
+    public async Task<double> GetFirstLayerAreaForPipe(int pipeId)
+    {
+        var pipe = await GetPipeById(pipeId);
+        if (pipe == null) return 0;
+        return pipe.GetFirstLayerArea();
+    }
+
+    public async Task<double> GetSecondLayerAreaForPipe(int pipeId)
+    {
+        var pipe = await GetPipeById(pipeId);
+        if (pipe == null) return 0;
+        return pipe.GetSecondLayerArea();
+    }
+
+    public async Task<double> GetTotalAreaForPipe(int pipeId)
+    {
+        var pipe = await GetPipeById(pipeId);
+        if (pipe == null) return 0;
+        return pipe.GetTotalArea();
+    }
+
+    public async Task<Dictionary<string, double>> GetAreaByInsulationType(int projectId)
+    {
+      throw new NotImplementedException();
+    }
+}

@@ -11,6 +11,7 @@ public class Database : DbContext, IDatabase
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<InsulatedPipeBase> Pipes { get; set; }
+    public DbSet<InsulationType> InsulationTypes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
