@@ -6,9 +6,17 @@ public class ProjectService(IDatabase DbContext) : IProjectService
 
     public async Task<Project?> GetProjectByProjectNumber(string ProjectNumber)
     {
-        return await _db.Projects
+
+        var project = await _db.Projects
             .Include(p => p.Organization)
+            .Include(p => p.Pipes)
+                .ThenInclude(pipe => pipe.FirstLayerMaterial)
+            .Include(p => p.Pipes)
+                .ThenInclude(pipe => pipe.SecondLayerMaterial)
             .FirstOrDefaultAsync(p => p.ProjectNumber == ProjectNumber);
+
+        Log.Information($"Project loaded: {project?.Name}, Pipe count: {project?.Pipes?.Count ?? 0}");
+        return project;
     }
     public Task AddProject(Project project)
     {

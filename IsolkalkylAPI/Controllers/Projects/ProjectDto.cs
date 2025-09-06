@@ -1,5 +1,7 @@
 namespace IsolkalkylAPI.Controllers.Projects;
 
+using IsolkalkylAPI.Controllers.Pipes;
+
 public record ProjectResponse(
     int Id,
     string ProjectNumber,
@@ -11,25 +13,26 @@ public record ProjectResponse(
     string? Customer,
     string? ContactPerson,
     string? ContactNumber,
-    string? Comment
-// TODO: Add pipes later: List<InsulatedPipeDto> Pipes
+    string? Comment,
+    List<PipeResponse> Pipes
 )
 {
     public static ProjectResponse FromProject(Project project)
     {
-        return new ProjectResponse(
-            project.Id,
-            project.ProjectNumber,
-            project.Name,
-            project.FromDate,
-            project.ToDate,
-            project.OrganizationId,
-            project.Address,
-            project.Customer,
-            project.ContactPerson,
-            project.ContactNumber,
-            project.Comment
-        );
+            return new ProjectResponse(
+                project.Id,
+                project.ProjectNumber,
+                project.Name,
+                project.FromDate,
+                project.ToDate,
+                project.OrganizationId,
+                project.Address,
+                project.Customer,
+                project.ContactPerson,
+                project.ContactNumber,
+                project.Comment,
+                project.Pipes?.Select(PipeResponse.FromInsulatedPipe).ToList() ?? new List<PipeResponse>()
+            );
     }
 }
 public record ProjectListResponse(

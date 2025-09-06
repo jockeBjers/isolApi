@@ -27,6 +27,17 @@ public class Database : DbContext, IDatabase
             .HasDiscriminator<string>("PipeType")
             .HasValue<CircularInsulatedPipe>("Circular")
             .HasValue<RectangularInsulatedPipe>("Rectangular");
+
+        modelBuilder.Entity<InsulatedPipeBase>()
+            .HasOne(p => p.Project)
+            .WithMany(p => p.Pipes)
+            .HasForeignKey(p => p.ProjectNumber)
+            .HasPrincipalKey(p => p.ProjectNumber)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Project>()
+            .HasIndex(p => p.ProjectNumber)
+            .IsUnique();
     }
     public async Task<int> SaveChangesAsync()
     {

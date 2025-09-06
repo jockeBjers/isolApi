@@ -27,6 +27,6 @@ public class Project
     [ForeignKey("OrganizationId")]
     public virtual Organization? Organization { get; set; }
 
-    // TODO: Add pipes later when implementing pipe functionality
-    public List<InsulatedPipeBase> Pipes { get; set; } = new List<InsulatedPipeBase>();
+    public ICollection<InsulatedPipeBase> Pipes { get; set; } = new List<InsulatedPipeBase>();
+
 }

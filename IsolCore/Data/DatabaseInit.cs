@@ -83,6 +83,29 @@ public class DatabaseInitializer(Database db)
             await _db.SaveChangesAsync();
         }
 
+        if (!_db.InsulationTypes.Any())
+        {
+            _db.InsulationTypes.Add(new InsulationType
+            {
+                Id = 1,
+                Name = "30mm, 3.6m²",
+                InsulationThickness = 0.03,
+                InsulationAreaPerMeter = 3.6,
+                InsulationCategory = "heat",
+                OrganizationId = "50522"
+            });
+            _db.InsulationTypes.Add(new InsulationType
+            {
+                Id = 2,
+                Name = "50mm, 2.7m²",
+                InsulationThickness = 0.05,
+                InsulationAreaPerMeter = 2.7,
+                InsulationCategory = "heat",
+                OrganizationId = "50522"
+            });
+            await _db.SaveChangesAsync();
+        }
+
         if (!_db.Projects.Any())
         {
             var project = new Project
@@ -114,6 +137,35 @@ public class DatabaseInitializer(Database db)
             _db.Projects.Add(project);
             _db.Projects.Add(project2);
             await _db.SaveChangesAsync();
+        }
+        if (!_db.Pipes.Any())
+        {
+            var targetProject = await _db.Projects.FirstOrDefaultAsync(p => p.ProjectNumber == "505052");
+            var firstInsulationType = _db.InsulationTypes.FirstOrDefault(t => t.Id == 1);
+
+            if (targetProject != null && firstInsulationType != null)
+            {
+                var pipe1 = new CircularInsulatedPipe
+                {
+                    ProjectNumber = "505052",
+                    Length = 10,
+                    FirstLayerMaterial = firstInsulationType,
+                    SizeId = 4,
+                };
+                var pipe2 = new RectangularInsulatedPipe
+                {
+                    ProjectNumber = "505052",
+                    Length = 10,
+                    SideA = 40,
+                    SideB = 20,
+                    FirstLayerMaterial = firstInsulationType,
+                };
+
+                _db.Pipes.Add(pipe1);
+                _db.Pipes.Add(pipe2);
+                await _db.SaveChangesAsync();
+
+            }
         }
     }
 }
