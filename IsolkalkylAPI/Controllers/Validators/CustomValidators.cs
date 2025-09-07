@@ -120,6 +120,35 @@ public static class ValidationExtensions
         return builder;
     }
 
+    public static IRuleBuilderOptions<T, string?> ValidatePipeType<T>(this IRuleBuilder<T, string?> rule, bool isRequired = true)
+    {
+        var builder = rule.Must(type => type == null || type.Equals("Circular", StringComparison.OrdinalIgnoreCase) || type.Equals("Rectangular", StringComparison.OrdinalIgnoreCase))
+                         .WithMessage("Pipe Type must be either 'Circular' or 'Rectangular'");
+
+        if (isRequired)
+            builder = builder.NotEmpty().WithMessage("Pipe Type is required")
+                             .NotNull().WithMessage("Pipe Type is required");
+
+        return builder;
+    }
+
+    public static IRuleBuilderOptions<T, double?> SideLengthValidation<T>(this IRuleBuilder<T, double?> rule, string name = "Side", bool isRequired = true)
+    {
+        var builder = rule
+            .InclusiveBetween(0, 4000)
+            .WithMessage($"{name} must be between 0 and 4000");
+
+        if (isRequired)
+        {
+            builder = builder
+                .NotNull()
+                .WithMessage($"{name} is required");
+        }
+
+        return builder;
+    }
+
+
     private static bool HasUppercaseLetter(string? password) => password?.Any(char.IsUpper) ?? false;
     private static bool HasLowercaseLetter(string? password) => password?.Any(char.IsLower) ?? false;
     private static bool HasDigit(string? password) => password?.Any(char.IsDigit) ?? false;
