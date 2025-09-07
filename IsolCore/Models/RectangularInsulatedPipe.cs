@@ -5,9 +5,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 public class RectangularInsulatedPipe : InsulatedPipeBase
 {
-    [Key]
-    public int Id { get; set; }
-    public double Length { get; set; }
     public double SideA { get; set; }
     public double SideB { get; set; }
 

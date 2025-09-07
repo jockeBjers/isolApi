@@ -13,7 +13,6 @@ public class Project
     public required string ProjectNumber { get; set; }
     [Required]
     public required string Name { get; set; }
-    public DateTime Date { get; set; }
     public DateTime FromDate { get; set; }
     public DateTime ToDate { get; set; }
     [Required]

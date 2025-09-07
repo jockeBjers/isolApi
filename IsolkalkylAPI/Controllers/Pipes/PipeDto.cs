@@ -81,20 +81,16 @@ public record CreatePipeRequest(
             {
                 ProjectNumber = ProjectNumber,
                 Length = Length,
-                FirstLayerMaterial = new InsulationType { Id = FirstLayerMaterialId },
-                SecondLayerMaterial = SecondLayerMaterialId.HasValue
-                                    ? new InsulationType { Id = SecondLayerMaterialId.Value }
-                                    : null,
-                Size = new CircularPipeSize { Id = SizeId ?? throw new ArgumentException("SizeId is required for circular pipes") }
+                FirstLayerMaterialId = FirstLayerMaterialId,
+                SecondLayerMaterialId = SecondLayerMaterialId,
+                SizeId = SizeId ?? throw new ArgumentException("SizeId is required for circular pipes")
             },
             "rectangular" => new RectangularInsulatedPipe
             {
                 ProjectNumber = ProjectNumber,
                 Length = Length,
-                FirstLayerMaterial = new InsulationType { Id = FirstLayerMaterialId },
-                SecondLayerMaterial = SecondLayerMaterialId.HasValue
-                    ? new InsulationType { Id = SecondLayerMaterialId.Value }
-                    : null,
+                FirstLayerMaterialId = FirstLayerMaterialId,
+                SecondLayerMaterialId = SecondLayerMaterialId,
                 SideA = SideA ?? throw new ArgumentException("SideA is required for rectangular pipes"),
                 SideB = SideB ?? throw new ArgumentException("SideB is required for rectangular pipes")
             },
@@ -123,9 +119,9 @@ public static class PipeRequestExtensions
         if (request.Length.HasValue)
             existingPipe.Length = request.Length.Value;
         if (request.FirstLayerMaterialId.HasValue)
-            existingPipe.FirstLayerMaterial = new InsulationType { Id = request.FirstLayerMaterialId.Value };
+            existingPipe.FirstLayerMaterialId = request.FirstLayerMaterialId.Value;
         if (request.SecondLayerMaterialId.HasValue)
-            existingPipe.SecondLayerMaterial = new InsulationType { Id = request.SecondLayerMaterialId.Value };
+            existingPipe.SecondLayerMaterialId = request.SecondLayerMaterialId.Value;
 
         switch (existingPipe)
         {

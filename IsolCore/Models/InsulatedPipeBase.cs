@@ -10,7 +10,11 @@ public abstract class InsulatedPipeBase
     public string ProjectNumber { get; set; } = null!;
     public virtual Project? Project { get; set; }
     public double Length { get; set; }
-    public required InsulationType FirstLayerMaterial { get; set; }
+    
+    public int FirstLayerMaterialId { get; set; }
+    public int? SecondLayerMaterialId { get; set; }
+    
+    public InsulationType? FirstLayerMaterial { get; set; }
     public InsulationType? SecondLayerMaterial { get; set; }
 
     public abstract double GetFirstLayerArea();
