@@ -60,7 +60,11 @@ public class PipesService(IDatabase DbContext) : IPipeService
     }
     public async Task<InsulatedPipeBase?> GetPipeById(int pipeId)
     {
-        return await _db.Pipes.FirstOrDefaultAsync(p => p.Id == pipeId);
+        return await _db.Pipes
+          .Include(p => p.FirstLayerMaterial)
+          .Include(p => p.SecondLayerMaterial)
+          .Include(p => p.Project)
+          .FirstOrDefaultAsync(p => p.Id == pipeId);
     }
 
 
