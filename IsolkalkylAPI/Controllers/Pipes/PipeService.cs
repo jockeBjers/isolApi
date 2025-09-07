@@ -9,10 +9,16 @@ public class PipesService(IDatabase DbContext) : IPipeService
     {
         return await _db.Pipes.Where(p => p.ProjectNumber == projectNumber).ToListAsync();
     }
-    public async Task AddPipe(InsulatedPipeBase pipe)
+    public async Task<InsulatedPipeBase> AddPipe(InsulatedPipeBase pipe)
     {
         await _db.Pipes.AddAsync(pipe);
         await _db.SaveChangesAsync();
+        
+        return await _db.Pipes
+            .Include(p => p.FirstLayerMaterial)
+            .Include(p => p.SecondLayerMaterial)
+            .Include(p => p.Project)
+            .FirstAsync(p => p.Id == pipe.Id);
     }
 
     public async Task<bool> DoesPipeExist(int pipeId)
